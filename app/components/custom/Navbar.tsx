@@ -3,19 +3,20 @@ import { Avatar, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { useSession } from "next-auth/react"
 import { signOut } from "next-auth/react"
+
 import {
-    Bell,
+   
     ChevronDown,
   } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+
 import Link from "next/link"
 import { useEffect, useState } from "react"
 export default function Appbar(){
   const [loading, setLoading] = useState(true)
   const session  = useSession()
   useEffect(()=>{
-    if(session){
+    if(session.data?.user){
       console.log(session)
       setLoading(false)
     }
@@ -56,7 +57,7 @@ export default function Appbar(){
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="flex items-center space-x-2">
               <Avatar className="h-8 w-8">
-                <AvatarImage src={session.data?.user?.image ?? ""} alt="" />
+                <AvatarImage src={session.data?.user?.image ?? "https://media.istockphoto.com/id/2151669184/vector/vector-flat-illustration-in-grayscale-avatar-user-profile-person-icon-gender-neutral.jpg?s=612x612&w=0&k=20&c=UEa7oHoOL30ynvmJzSCIPrwwopJdfqzBs0q69ezQoM8="} alt="" />
                 
               </Avatar>
               <div className="flex flex-col items-start text-sm">

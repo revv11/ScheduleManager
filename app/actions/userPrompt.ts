@@ -37,6 +37,17 @@ export default async function userPrompt(msg: string){
             NewMessage(msg, userId)
         ])
 
+        await db.message.create({
+            data:{
+                userId,
+                content:JSON.stringify(res1),
+                role: "AI"
+
+            }
+        })
+
+        
+
         return {success: true, message: res1}
 
        

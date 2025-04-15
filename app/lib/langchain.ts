@@ -1,9 +1,42 @@
 import { db } from "./db";
-import { HumanMessage, AIMessage, MessageContent } from "@langchain/core/messages";
+import { HumanMessage, AIMessage } from "@langchain/core/messages";
 import { ChatPromptTemplate } from "@langchain/core/prompts";
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import { RunnableSequence } from "@langchain/core/runnables";
-import { AIMessageChunk } from "@langchain/core/messages";
+
+
+const egprompt = {
+  "type": "user",
+  "user": "I want to attend a family function at 10 PM. After that, I'll be back around 11:30 PM, and then I wish to read a book."
+}
+
+const eglast = {
+  "type": "output",
+  "output": {
+    "tasks": [
+      { "name": "Study DSA/OOPS", "duration": 240, "priority": "high", "startTime": "18:00" },
+      { "name": "Short Break", "duration": 15, "priority": "low", "startTime": "22:00" },
+      { "name": "Practice Guitar", "duration": 60, "priority": "medium", "startTime": "22:15" }
+    ],
+    "description": "You should prioritize DSA preparation given the upcoming test. Allocate focused study time with short breaks. Include guitar practice after primary study session."
+  }
+}
+
+
+const egoutput = {
+  "type": "output",
+  "output": {
+    "tasks": [
+      { "name": "Study DSA/OOPS", "duration": 240, "priority": "high", "startTime": "16:00" },
+      { "name": "Short Break", "duration": 15, "priority": "low", "startTime": "20:00" },
+      { "name": "Practice Guitar", "duration": 60, "priority": "medium", "startTime": "20:15" },
+      { "name": "Attend Family Function", "duration": 90, "priority": "medium", "startTime": "22:00" },
+      { "name": "Read a Book", "duration": 60, "priority": "low", "startTime": "23:30" }
+    ],
+    "description": "To ensure all tasks are completed, start studying DSA/OOPS earlier at 4 PM. Follow it with a short break and guitar practice. Attend the family function at 10 PM and unwind by reading a book afterward.",
+    "updated": true
+  }
+}
 
 
 export const model = new ChatGoogleGenerativeAI({
@@ -11,50 +44,19 @@ export const model = new ChatGoogleGenerativeAI({
     model : "gemini-2.0-flash",
 })
 
+function extractJsonFromCodeBlock(str:string) {
+  if (typeof str !== 'string') throw new Error('Input must be a string');
 
-function extractTextFromJsonContent(chunk: MessageContent): string {
-    const content = chunk;
-    
-    // If content is a string but contains JSON
-    if (typeof content === "string") {
-      try {
-        // Try to parse the string as JSON
-        const parsedContent = JSON.parse(content);
-        // Extract the text or relevant field from the parsed JSON
-        // (Adjust this based on your actual JSON structure)
-        if (typeof parsedContent === "object" && parsedContent !== null) {
-          if ("text" in parsedContent) {
-            return parsedContent.text as string;
-          }
-          // If your JSON has a different structure, handle it accordingly
-          // For example, if the content is in a 'message' field:
-          if ("message" in parsedContent) {
-            return parsedContent.message as string;
-          }
-        }
-        // If we couldn't find a text field, return the stringified JSON
-        return JSON.stringify(parsedContent);
-      } catch (e) {
-        // If parsing fails, return the original string
-        return content;
-      }
-    }
-    
-    // If content is already a parsed JSON object
-    if (typeof content === "object" && content !== null) {
-      // Handle based on your JSON structure
-      if ("text" in content) {
-        return (content as any).text;
-      }
-      // Add other conditions based on your JSON structure
-      
-      // If no specific field found, stringify the whole object
-      return JSON.stringify(content);
-    }
-    
-    // Fallback for unexpected formats
-    return String(content);
+  // Remove leading and trailing backticks and "json"
+  const cleaned = str.replace(/```json|```/g, '').trim();
+
+  try {
+    return JSON.parse(cleaned);
+  } catch (err:any) {
+    console.error('Failed to parse JSON:', err.message);
+    return null;
   }
+}
 
 async function fetchMessagesFromDB(userId: string){
     const res = await db.message.findMany({
@@ -65,144 +67,123 @@ async function fetchMessagesFromDB(userId: string){
             createdAt: "asc"
         }
     })
-
     const chatHistory = res.map((doc) =>
         doc.role === "USER"
           ? new HumanMessage(doc.content)
           : new AIMessage(doc.content)
     );
-    
+    console.log(chatHistory)
     return chatHistory
     
 }
 
 
-const chathistory = [
-    new HumanMessage("I have a test tomorrow of DSA, need to study OOPS, also I need to practice guitar for 1 hour for my upcoming show which is day after tomorrow"),
-    new AIMessage(JSON.stringify({
-      type: "output",
-      output: {
-        tasks: [
-          { name: "Study DSA/OOPS", duration: 240, priority: "high", startTime: "18:00" },
-          { name: "Short Break", duration: 15, priority: "low", startTime: "22:00" },
-          { name: "Practice Guitar", duration: 60, priority: "medium", startTime: "22:15" }
-        ],
-        description: "You should prioritize DSA preparation given the upcoming test. Allocate focused study time with short breaks. Include guitar practice after primary study session."
-      }
-    }))
-  ];
 
 export async function AIResponse(q: string, userId: string){
 
-    const chatHistory = await fetchMessagesFromDB(userId);
+    const chats = await fetchMessagesFromDB(userId);
+    console.log("chats",chats)
 
+    const AImessages  = chats.filter((chat)=> chat instanceof AIMessage && JSON.parse(chat.content.toString()).output.updated === true)
+    console.log(AImessages)
+    const lastSuggestion =  AImessages[AImessages.length-1]?.content ?? {}
 
+    console.log(lastSuggestion)
 
     const historyAwareRetrievalPrompt = ChatPromptTemplate.fromMessages([
         [
           "system",
           `You are an AI scheduling assistant that helps users plan their day efficiently.
       
-      IMPORTANT: Respond ONLY in valid JSON format with this possible type:
-      - {{ "type": "output", "output": {{ "tasks": [task details], "description": [give a brief overview of what did you come up with] }} }}
-      
-      Rules for schedule generation:
-      - Consider existing commitments
-      - Prioritize high-priority tasks
-      - Allocate realistic time blocks
-      - Include breaks
-      - Optimize productivity
-      - Factor in user's energy levels and context
-      - Provide buffer time between tasks
-      
-      Output JSON Structure for Tasks:
-      {{
-        "tasks": [
+          IMPORTANT: Respond ONLY in valid JSON format with this possible type:
+          - {{ "type": "output", "output": {{ "tasks": [task details], "description": [give a brief overview of what did you come up with], "updated": [boolean value based on whether the tasks in this response is different to the previous response ] }} }}
+          
+          Rules for schedule generation:
+          - Consider existing commitments
+          - Prioritize high-priority tasks
+          - Allocate realistic time blocks
+          - Include breaks
+          - Optimize productivity
+          - Factor in user's energy levels and context
+          - Provide buffer time between tasks
+          
+          Output JSON Structure for Tasks:
           {{
-            "name": "Task Name",
-            "duration": minutes,
-            "priority": "high/medium/low",
-            "startTime": "HH:MM"
+            "tasks": [
+              {{
+                "name": "Task Name",
+                "duration": minutes,
+                "priority": "high/medium/low",
+                "startTime": "HH:MM"
+              }}
+            ]
           }}
-        ]
-      }}
-      
-      Additional Constraints:
-      - Ensure total task duration is reasonable
-      - Respect user's natural energy rhythms
-      - Consider potential interruptions or context switching
-      - Suggest short breaks between intense tasks
-      - In case the user wants to edit the schedule return the entire schedule again including the new addition
-      
-      Example interaction demonstrating ideal response (each line should be a single JSON object i.e respond 1 json at a time. The response you give should be the prompt for the next step):
-      {{ "type": "user", "user": "I have a test tomorrow of DSA, need to study OOPS, also i need to practice guitar for 1 hour for my upcoming show which is day after tomorrow" }}
-      {{ "type": "output", "output": {{ "tasks": [{{ "name": "Study DSA/OOPS", "duration": 240, "priority": "high", "startTime": "18:00" }}, {{ "name": "Short Break", "duration": 15, "priority": "low", "startTime": "22:00" }}, {{ "name": "Practice Guitar", "duration": 60, "priority": "medium", "startTime": "22:15" }}], "description": "You should prioritize DSA preparation given the upcoming test. Allocate focused study time with short breaks. Include guitar practice after primary study session." }} }}
+          
+          you also have the context of the previous suggestion as well as the whole chat history
+          lastsuggestion: {lastSuggestion}
+          
+          Additional Constraints:
+          - Ensure total task duration is reasonable
+          - Respect user's natural energy rhythms
+          - Consider potential interruptions or context switching
+          - Suggest short breaks between intense tasks
+          - In case the user wants to edit the schedule return the entire schedule again including the new addition
+          - Even if the user ask miscellaneous question for example "Hey, what was my last message" give the answer in the above stated format.
+          so the response will be:
+          {{"type": "output", "output": {{"tasks": [], "description": "your last message was: I have a test tomorrow of DSA, need to study OOPS, also I need to practice guitar for 1 hour for my upcoming show which is day after tomorrow ", "updated": false}} }}
+
+          Example interaction demonstrating ideal response (each line should be a single JSON object i.e respond 1 json at a time. The response you give should be the prompt for the next step):
+          {egprompt}
+
+          (Now first check what all tasks are there in lastsuggestion if it exists. If there are clashes you need to reschedule the tasks to ensure the user can complete all the tasks
+          lets say the lastsuggestion from you was:
+          {eglast}
+
+
+
+
+          you need to reschedule the timetable in the stated format
+
+
+          //FINAL OUTPUT YOU WILL GENERATE
+          {egoutput}
+
+          //EXAMPLE 2
+          Even if the user ask anything else than a schedule request for example give the answer in the above stated format.
+          FOR EXAMPLE
+
+          {{"type": "user", "user": "Hi"}} 
+        
+          {{"type": "output", "output": {{"tasks": [], "description": "Hi im an AI scheduling assistant. How can i help you? ", "updated": false}} }}
+
+          THIS IS JUST AN EXAMPLE RESPOND TO USER AS PER THEIR QUESTION
       `
         ],
-        ...chatHistory.map((msg) => [msg._getType(), msg.content] as [string, string]),
-        ["user", "{input}"]
-      ]);
+        ...chats,
+        ["user", "{input}"],
+        
+      ],
+     
+    );
       const chain = RunnableSequence.from([
         historyAwareRetrievalPrompt,
         model
       ]);
       
-      // 🔥 Main Function to Run
-        const run = async (newInput: string) => {
-            const result = await chain.invoke({ input: newInput });
-        
-            // Parse the model response
-            
-            const newres = extractTextFromJsonContent(result.content);
-            const cleanednewres = newres.replace(/```json|```/g, '').trim();
-            console.log(typeof(newres))
-            console.log("without json written",newres)
-            let newOutput;
-            try {
-            newOutput = JSON.parse(cleanednewres);
-            } 
-            catch (err) {
-
-                console.log(err)
-                throw new Error("Error parsing model response:");
-            
-            }
-        
-            // 🔁 Extract all previous tasks from chatHistory
-            const AISuggestions = chatHistory
-            .filter((msg) => msg instanceof AIMessage)
-            
-            const lastSuggestion = extractTextFromJsonContent(AISuggestions[AISuggestions.length-1].content)
-           console.log("lastsuggestion",lastSuggestion)
-            
-            let previoustask
-            try {
-                previoustask = JSON.parse(lastSuggestion);
-            } 
-            catch (err) {
-
-                console.log(err)
-                throw new Error("Error parsing model response:");
-            
-            }
-
-        
-            // 🧩 Combine previous and current tasks
-            const allTasks = [...previoustask.output.tasks, ...newOutput.output.tasks];
-        
-            // ✅ Final output for the UI
-            const finalResponse = {
-            type: "output",
-            output: {
-                tasks: allTasks,
-                description: newOutput.output.description
-            }
-            };
-        
-            console.log("🔄 Full Response with Merged Tasks:", JSON.stringify(finalResponse, null, 2));
-        };
+      const res = await chain.invoke({
+        llm: model,
+        lastSuggestion,
+        input: q,
+        egoutput: JSON.stringify(egoutput),
+        egprompt: JSON.stringify(egprompt),
+        eglast: JSON.stringify(eglast)
+      })
       
-      await run("Add 2 hours of web dev for my side project, preferably in the morning");
+      const resstring = res.content.toString()
 
-    return "hehehe"
+      const finalres = extractJsonFromCodeBlock(resstring)
+      console.log("finalres",finalres)
+      
+
+    return finalres
 }

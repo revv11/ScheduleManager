@@ -3,7 +3,9 @@
 import AICard from "@/components/custom/AICard"
 import ScheduleCard from "@/components/custom/ScheduleCard"
 import Prompt from "@/components/custom/Prompt"
+import AIRec from "@/components/custom/AIRec"
 export default function SchedulerApp() {
+  
 
   return (
     <div className="h-full bg-white">
@@ -31,17 +33,8 @@ export default function SchedulerApp() {
           </div>
           
 
-            {/* AI Recommendations */}
-            <div className="border overflow-y-scroll border-gray-200 rounded-md p-6">
-                <h2 className="text-lg font-bold mb-4">AI Recommendations</h2>
-
-                <div className="space-y-4">
-                <AICard/>
-                <AICard/>
-                <AICard/>
-                <AICard/>
-                </div>
-            </div>
+          {/* AI Recommendations */}
+          <AIRec/>
           {/* Today's Schedule */}
           <Prompt/>
         </div>

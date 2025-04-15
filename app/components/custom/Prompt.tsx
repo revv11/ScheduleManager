@@ -5,37 +5,47 @@ import { FormEvent, useEffect, useRef, useState, useTransition } from "react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Loader2Icon } from "lucide-react";
-import axios from "axios";
+import { FetchMessages } from "@/actions/FetchMessages";
 // import ChatMessage from "./ChatMessage";
 
 // import { askQuestion } from "@/actions/askQuestion";
 // import ChatMessage from "./ChatMessage";
 import ChatMessage from "../custom/ChatMessage";
-import { useSession } from "next-auth/react";
+import { Role } from "@prisma/client";
+import useSchedule from "@/zustand/useSchedule";
 
 
 export type Message = {
   id? : string;
-  role: "human" | "ai" | "placeholder";
-  message: string,
+  role: Role;
+  content: string,
   createdAt?: Date;
 }
-
-const custommessages = [
-    {id: "abcedef", role: "human", message:"hello how are you im under the wotor", createdAt: "2025-04-11T22:40:37.197Z"},
-    {id: "helloai", role: "ai", message : "hello im goooood", createdat: "2025-04-11T22:40:37.197Z"},
-
-] 
 
 
 
 function Prompt() {
-    const session = useSession()
+    const {setTasks} = useSchedule()
     const [loading, setLoading] = useState(false)
     const [input, setInput] = useState("");
     const [messages, setMessages] = useState<Message[]>([]);
     const [isPending, startTransition] = useTransition() 
     const bottomOfChatRef = useRef<HTMLDivElement>(null);
+
+    useEffect(()=>{
+        async function run(){
+            const res = await FetchMessages();
+            console.log(res)
+            if(res.success){
+                setMessages(res.messages)
+                const AImessages  = res.response.filter((chat)=> chat.role === Role.AI && JSON.parse(chat.content.toString()).output.updated === true)
+                const lastSuggestion  = AImessages[AImessages.length - 1]
+                setTasks(JSON.parse(lastSuggestion.content).output.tasks)
+                
+            }
+        }
+        run()
+    },[])
     
     // OPTIMISTIC UI UPDATE
     async function handleSubmit(e: FormEvent){
@@ -46,28 +56,45 @@ function Prompt() {
         setMessages((prev)=>[
         ...prev,
         {
-            role: "human",
-            message: q,
+            role: Role.USER,
+            content: q,
             createdAt: new Date(),
         },
         {
-            role: "ai",
-            message: "Thinking...",
+            role: Role.AI,
+            content: "Thinking...",
             createdAt: new Date()
         }
         ])
 
         try{
-            const res = await userPrompt(input)
-            
-            setMessages(prev => [
-                ...prev.slice(0, -1),
-                {
-                  id: "helloai",
-                  role: "ai",
-                  message: res.message,
+            startTransition(async ()=>{
+                setLoading(true)
+                const res = await userPrompt(input)
+                setLoading(false)
+                setTasks(res.message.output.tasks)
+                if(res.error){
+                    setMessages(prev => [
+                        ...prev.slice(0, -1),
+                        {
+                         
+                          role: Role.AI,
+                          content:  res.message 
+                        }
+                      ]);
+    
                 }
-              ]);
+                else{
+                    setMessages(prev => [
+                        ...prev.slice(0, -1),
+                        {
+                          role: Role.AI,
+                          content:  res.message.output.description 
+                        }
+                      ]);
+                }
+
+            })
         }
         catch(e){
             console.log(e)
@@ -102,8 +129,8 @@ function Prompt() {
                 <ChatMessage
                     key={"placeholder"}
                     message={{
-                    role: "ai",
-                    message: "Ask me anything about the document!",
+                    role: Role.AI,
+                    content: "Let's build a schedule",
                     createdAt: new Date(),
                     }}
                 />

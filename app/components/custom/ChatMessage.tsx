@@ -8,7 +8,7 @@ import { useSession } from "next-auth/react";
 
 
 function ChatMessage({ message }: { message:any }) {
-    const isHuman = message.role === "human";
+    const isHuman = message.role === "USER";
     const session  = useSession()
     const user = session.data?.user
     return (
@@ -36,12 +36,12 @@ function ChatMessage({ message }: { message:any }) {
         <div
             className={`chat-bubble bg-indigo-300 prose ${isHuman && "bg-indigo-600 text-white"}`}
         >
-            {message.message === "Thinking..." ? (
+            {message.content === "Thinking..." ? (
             <div className="flex items-center justify-center">
                 <Loader2Icon className="animate-spin h-5 w-5 text-white" />
             </div>
             ) : (
-            <Markdown>{message.message}</Markdown>
+            <Markdown>{message.content}</Markdown>
             )}
         </div>
         </div>

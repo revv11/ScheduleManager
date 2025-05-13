@@ -33,7 +33,7 @@ export async function FetchMessages() {
     }
     catch(e:any){
         console.log(e)
-        return {error: e, message: "Unable to fetch messages"}
+        return {error: e, message: "Database error"}
     }
    
 }

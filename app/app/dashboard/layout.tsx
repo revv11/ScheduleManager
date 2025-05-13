@@ -3,8 +3,8 @@
 
 
 import Navbar from "@/components/custom/Navbar"
-
-
+import { ThemeProvider } from "@/components/theme-provider";
+import Appbar from "@/components/custom/Navbar";
 
 
 
@@ -14,14 +14,16 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (   
-    <body
-    className={``}
-    >       
+    <body className={``}>         
+      <Appbar/>
+      <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
         <div className="h-full-full">
-            <Navbar/>
-            {children}
+
+          {children}
+
 
         </div>
+      </ThemeProvider>
     </body>
   );
 }

@@ -5,6 +5,34 @@ import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import { RunnableSequence } from "@langchain/core/runnables";
 
 
+
+async function getLastSuggestion(userId: string){
+  try{
+    const res = await db.task.findMany({
+      where:{
+         userId
+      }
+    })
+
+    return({lastsuggestion: res})
+  }
+  catch(e){
+    console.log(e)
+    throw new Error("gg ho gya")
+  }
+}
+
+
+function formatDateTime(date: Date) {
+  const dd = String(date.getDate()).padStart(2, '0');
+  const mm = String(date.getMonth() + 1).padStart(2, '0'); // Months are 0-indexed
+  const yy = String(date.getFullYear()).slice(-2);
+  const time = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+  return `${dd}/${mm}${yy} ${time}`;
+}
+
+
 const egprompt = {
   "type": "user",
   "user": "I want to attend a family function at 10 PM. After that, I'll be back around 11:30 PM, and then I wish to read a book."
@@ -59,6 +87,7 @@ function extractJsonFromCodeBlock(str:string) {
 }
 
 async function fetchMessagesFromDB(userId: string){
+    
     const res = await db.message.findMany({
         where: {
             userId
@@ -80,14 +109,13 @@ async function fetchMessagesFromDB(userId: string){
 
 
 export async function AIResponse(q: string, userId: string){
-
+    const time = formatDateTime(new Date())
     const chats = await fetchMessagesFromDB(userId);
     console.log("chats",chats)
 
-    const AImessages  = chats.filter((chat)=> chat instanceof AIMessage && JSON.parse(chat.content.toString()).output.updated === true)
-    console.log(AImessages)
-    const lastSuggestion =  AImessages[AImessages.length-1]?.content ?? {}
-
+    const lastsug = await getLastSuggestion(userId)
+    const lastSuggestion =  JSON.stringify(lastsug)
+    
     console.log(lastSuggestion)
 
     const historyAwareRetrievalPrompt = ChatPromptTemplate.fromMessages([
@@ -129,6 +157,11 @@ export async function AIResponse(q: string, userId: string){
           - Suggest short breaks between intense tasks
           - In case the user wants to edit the schedule return the entire schedule again including the new addition
           - Even if the user ask miscellaneous question for example "Hey, what was my last message" give the answer in the above stated format.
+          - You also have the current local time of the user so make the schedule accordingly
+          
+
+          user local time: {time}
+
           so the response will be:
           {{"type": "output", "output": {{"tasks": [], "description": "your last message was: I have a test tomorrow of DSA, need to study OOPS, also I need to practice guitar for 1 hour for my upcoming show which is day after tomorrow ", "updated": false}} }}
 
@@ -176,13 +209,14 @@ export async function AIResponse(q: string, userId: string){
         input: q,
         egoutput: JSON.stringify(egoutput),
         egprompt: JSON.stringify(egprompt),
-        eglast: JSON.stringify(eglast)
+        eglast: JSON.stringify(eglast),
+        time
       })
       
       const resstring = res.content.toString()
 
       const finalres = extractJsonFromCodeBlock(resstring)
-      console.log("finalres",finalres)
+      console.log("finalres",JSON.stringify(finalres))
       
 
     return finalres

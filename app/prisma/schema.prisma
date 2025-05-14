@@ -19,6 +19,7 @@ model User {
   password  String
   createdAt DateTime @default(now())
   messages  Message[]
+  tasks     Task[]
 }
 
 
@@ -29,6 +30,26 @@ model Message{
   content String
   createdAt DateTime @default(now())
   role Role
+  updated Boolean?
+}
+
+model Task{
+  id             String    @id @default(cuid())
+  title          String
+  startTime      String
+  duration       String     
+  priority       Priority
+  confirmed      Boolean   @default(false)
+  userId         String
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+}
+
+enum Priority {
+  HIGH
+  MEDIUM
+  LOW
 }
 
 enum Role{

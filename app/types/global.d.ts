@@ -1,8 +1,8 @@
 
 
 type TaskType = {
-    name: string,
-    duration: number,
+    title: string,
+    duration: string,
     startTime: string,
     priority: string,
 }

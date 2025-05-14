@@ -5,6 +5,10 @@ import { AIResponse } from "@/lib/langchain"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/app/api/auth/[...nextauth]/options"
 
+
+
+
+
 const NewMessage = async (q: string, userId: string)=>{
     
     const res = db.message.create({
@@ -36,25 +40,57 @@ export default async function userPrompt(msg: string){
             
             NewMessage(msg, userId)
         ])
+        if(res1.output.updated===true){
+            const [res3,res4] = await Promise.all([
+                await db.task.deleteMany({
+                    where:{
+                        userId:session.user.id,
+                        confirmed:false
+                    }
+                }),
+                await db.task.createMany({
+                    data: res1.output.tasks.map((task: any) => ({
+                    title: task.name,
+                    startTime: String(task.startTime),
+                    duration: String(task.duration),
+                    priority: task.priority.toUpperCase(), // e.g. "HIGH"
+                    userId: session.user.id,
+                    confirmed: false,
+                    
+                    })),
+                })
+    
+            ])
 
-        await db.message.create({
+        }
+
+
+        const finalres = await db.message.create({
             data:{
                 userId,
-                content:JSON.stringify(res1),
-                role: "AI"
-
+                content:res1.output.description,
+                role: "AI",
+                updated: res1.output.updated
             }
         })
 
         
 
-        return {success: true, message: res1}
+        return {success: true, message: finalres}
 
        
 
     }
     catch(e){
         console.log(e)
-        return {error: e, message: "Oops! an error occured"}
+        const finalres = await db.message.create({
+            data:{
+                userId,
+                content:"oops an error occured",
+                role: "AI",
+                updated: false
+            }
+        })
+        return {error: e, message: finalres}
     }
 }   

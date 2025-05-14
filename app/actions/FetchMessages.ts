@@ -25,7 +25,7 @@ export async function FetchMessages() {
                     id: message.id,
                     createdAt: message.createdAt,
                     role: message.role,
-                    content: JSON.parse(message.content).output.description as string
+                    content: message.content
                 }
             }
         })

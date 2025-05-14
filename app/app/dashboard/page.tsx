@@ -11,7 +11,7 @@ import { ScrollArea } from "@/components/ui/scroll-area"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Clock, Calendar, Send, MessageSquare } from "lucide-react"
-
+import Progress from "@/components/custom/Progress"
 
 
 
@@ -25,29 +25,9 @@ export default function Home() {
 
       {/* Progress Bar */}
       
-      <main className="container mx-auto p-4 grid grid-cols-1 md:grid-cols-3 gap-6 max-w-7xl">
+      <main className="container mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-6 max-w-7xl">
         {/* Today's Schedule */}
-        <Card className="bg-zinc-950 border-zinc-800 md:col-span-1">
-          <CardHeader className="border-b border-zinc-800 pb-3">
-            <CardTitle className="flex items-center justify-between">
-              <span className="text-lg font-semibold text-white">Today's Schedule</span>
-              <span className="text-sm font-normal text-zinc-400">Friday, March 28, 2025</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
-            <ScrollArea className="h-[calc(100vh-220px)]">
-              {scheduleItems.map((item, index) => (
-                <div key={index} className="p-4 border-b border-zinc-800/50 hover:bg-zinc-900/50 transition-colors">
-                  <div className="flex justify-between items-start mb-1">
-                    <h3 className="font-medium text-white">{item.title}</h3>
-                    <span className="text-sm text-zinc-400">{item.time}</span>
-                  </div>
-                  <div className="text-sm text-zinc-400">Duration: {item.duration}</div>
-                </div>
-              ))}
-            </ScrollArea>
-          </CardContent>
-        </Card>
+        <Progress/>
 
         {/* AI Recommendations */}
         <AIRec/>

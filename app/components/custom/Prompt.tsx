@@ -18,6 +18,7 @@ import toast from "react-hot-toast"
 import ChatMessage from "../custom/ChatMessage";
 import { Role } from "@prisma/client";
 import useSchedule from "@/zustand/useSchedule";
+import { refresh } from "@/lib/refresh"
 
 
 export type Message = {
@@ -45,13 +46,8 @@ function Prompt() {
             console.log(res)
             if(res.success && res.messages.length>0){
                 setMessages(res.messages)
-                const AImessages  = res.response.filter((chat)=> chat.role === Role.AI && JSON.parse(chat.content.toString()).output.updated === true)
-                if(AImessages.length>0){
-                    const lastSuggestion  = AImessages[AImessages?.length - 1]
-                    setTasks(JSON.parse(lastSuggestion?.content)?.output.tasks)
-                    
-  
-                }
+                
+               
             }
 
           }
@@ -98,18 +94,23 @@ function Prompt() {
                       {
                         
                         role: Role.AI,
-                        content:  res.message 
+                        content:  res.message.content 
                       }
                     ]);
     
                 }
                 else{
-                    setTasks(res.message.output.tasks)
+                    if(res.message.updated=== true){
+                      //call a function to update tasks
+                      const newtasks  = await refresh()
+                      setTasks(newtasks.newSchedule)
+
+                    }
                     setMessages(prev => [
                         ...prev.slice(0, -1),
                         {
                           role: Role.AI,
-                          content:  res.message.output.description 
+                          content:  res.message.content
                         }
                       ]);
                 }

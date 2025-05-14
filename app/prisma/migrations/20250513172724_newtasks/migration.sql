@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "Task" ALTER COLUMN "startTime" SET DATA TYPE TEXT,
+ALTER COLUMN "duration" SET DATA TYPE TEXT;

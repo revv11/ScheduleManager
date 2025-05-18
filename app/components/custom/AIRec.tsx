@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Clock, Calendar, Send, MessageSquare } from "lucide-react"
 import axios from 'axios'
-
+import dayjs from 'dayjs'
 
 
 function PriorityBadge({ priority }:any) {
@@ -48,23 +48,23 @@ function AIRec() {
         run()
     },[])
 
-
+    if(tasks.length===0){
+      return(
+        <Card className='bg-zinc-950 border-zinc-800 md:col-span-1 ' >
+          <CardHeader className="border-b border-zinc-800 pb-3">
+            <CardTitle className="text-lg font-semibold text-white">AI Recommendations</CardTitle>
+          </CardHeader>
+          <h1 className='flex items-center  justify-center h-full'>
+              Start building a schedule!
+          </h1>
+        </Card>
+      )
+    }
 
 
 
     return (
-        // <div className="border overflow-y-scroll border-gray-200 rounded-md p-6">
-        //             <h2 className="text-lg font-bold mb-4">AI Recommendations</h2>
-
-        //             <div className="space-y-4">
-        //             {tasks.map((task, _id)=>(
-        //                 <div key={_id}>
-        //                     <AICard task={task}/>
-        //                 </div>
-        //             ))}
-                    
-        //             </div>
-        //         </div>
+        
         <Card className="bg-zinc-950 border-zinc-800 md:col-span-1">
           <CardHeader className="border-b border-zinc-800 pb-3">
             <CardTitle className="text-lg font-semibold text-white">AI Recommendations</CardTitle>
@@ -81,7 +81,7 @@ function AIRec() {
                     </div>
                   </div>
                   <div className="flex justify-between items-center">
-                    <div className="text-sm text-zinc-400">Start Time: {item.startTime}</div>
+                    <div className="text-sm text-zinc-400">Start Time: {dayjs(item.startTime).format('hh:mm A')}</div>
                     <PriorityBadge priority={item.priority} />
                   </div>
                 </div>

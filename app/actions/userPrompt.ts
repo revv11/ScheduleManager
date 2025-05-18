@@ -40,12 +40,12 @@ export default async function userPrompt(msg: string){
             
             NewMessage(msg, userId)
         ])
-        if(res1.output.updated===true){
+        if(res1.output?.updated===true){
             const [res3,res4] = await Promise.all([
                 await db.task.deleteMany({
                     where:{
                         userId:session.user.id,
-                        confirmed:false
+                    
                     }
                 }),
                 await db.task.createMany({
@@ -55,7 +55,7 @@ export default async function userPrompt(msg: string){
                     duration: String(task.duration),
                     priority: task.priority.toUpperCase(), // e.g. "HIGH"
                     userId: session.user.id,
-                    confirmed: false,
+               
                     
                     })),
                 })
@@ -68,9 +68,9 @@ export default async function userPrompt(msg: string){
         const finalres = await db.message.create({
             data:{
                 userId,
-                content:res1.output.description,
+                content:res1.output?.description,
                 role: "AI",
-                updated: res1.output.updated
+                updated: res1.output?.updated
             }
         })
 
@@ -86,7 +86,7 @@ export default async function userPrompt(msg: string){
         const finalres = await db.message.create({
             data:{
                 userId,
-                content:"oops an error occured",
+                content:"Oops! An error occured.",
                 role: "AI",
                 updated: false
             }

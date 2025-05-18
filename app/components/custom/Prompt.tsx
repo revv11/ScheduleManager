@@ -12,13 +12,13 @@ import { Loader2Icon } from "lucide-react";
 import { FetchMessages } from "@/actions/FetchMessages";
 import toast from "react-hot-toast"
 // import ChatMessage from "./ChatMessage";
-
+import axios from "axios"
 // import { askQuestion } from "@/actions/askQuestion";
 // import ChatMessage from "./ChatMessage";
-import ChatMessage from "../custom/ChatMessage";
 import { Role } from "@prisma/client";
 import useSchedule from "@/zustand/useSchedule";
 import { refresh } from "@/lib/refresh"
+import { useSession } from "next-auth/react"
 
 
 export type Message = {
@@ -31,7 +31,8 @@ export type Message = {
 
 
 function Prompt() {
-    const {setTasks} = useSchedule()
+    const session = useSession()
+    const {tasks,setTasks} = useSchedule()
     const [loading, setLoading] = useState(false)
     const [input, setInput] = useState("");
     const [messages, setMessages] = useState<Message[]>([]);
@@ -104,7 +105,7 @@ function Prompt() {
                       //call a function to update tasks
                       const newtasks  = await refresh()
                       setTasks(newtasks.newSchedule)
-
+                   
                     }
                     setMessages(prev => [
                         ...prev.slice(0, -1),
@@ -135,62 +136,7 @@ function Prompt() {
 
 
     return (
-        // <div className="flex flex-col h-full overflow-y-scroll">
-        // {/* Chat contents */}
-        // <div className="flex-1 w-full">
-        //     {/* chat messages... */}
-
-        //     {loading ? (
-        //     <div className="flex items-center justify-center">
-        //         <Loader2Icon className="animate-spin h-20 w-20 text-indigo-600 mt-20" />
-        //     </div>
-        //     ) : (
-        //     <div className="p-5">
-        //         {messages.length === 0 && (
-        //         <ChatMessage
-        //             key={"placeholder"}
-        //             message={{
-        //             role: Role.AI,
-        //             content: "Let's build a schedule",
-        //             createdAt: new Date(),
-        //             }}
-        //         />
-        //         )}
-
-        //         {messages.map((message, index) => (
-        //         <ChatMessage key={index} message={message} />
-        //         ))}
-
-        //         <div ref={bottomOfChatRef} />
-        //     </div>
-        //     )}
-        // </div>
-
-        // <form
-        //     onSubmit={handleSubmit}
-        //     className="flex sticky bottom-0 space-x-2 p-5 bg-indigo-600/75"
-        // >
-        //     <Input
-        //     placeholder="Ask a Question..."
-        //     value={input}
-        //     onChange={(e) => setInput(e.target.value)}
-        //     />
-
-        //     <Button type="submit" className="border-2 bg-blue-900 text-indigo-200" disabled={!input || isPending}>
-        //     {isPending ? (
-        //         <Loader2Icon className="animate-spin text-indigo-600" />
-        //     ) : (
-        //         "Ask"
-        //     )}
-        //     </Button>
-        // </form>
-        // </div>
-
-
-
-
-
-
+       
 
         <Card className="bg-zinc-950 border-zinc-800 md:col-span-1">
           <CardHeader className="border-b border-zinc-800 pb-3">
@@ -221,8 +167,8 @@ function Prompt() {
                     {message.role === "USER" && (
                       <div className="ml-2">
                         <Avatar className="h-8 w-8 border border-purple-500/20">
-                          <AvatarImage src="/placeholder.svg?height=32&width=32" alt="User" />
-                          <AvatarFallback className="bg-purple-900 text-purple-200">UA</AvatarFallback>
+                          <AvatarImage src={session.data?.user?.image ?? ""} alt="User" />
+                          <AvatarFallback className="bg-purple-900 text-purple-200"></AvatarFallback>
                         </Avatar>
                       </div>
                     )}

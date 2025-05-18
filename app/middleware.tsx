@@ -21,7 +21,7 @@ export async function middleware(req: NextRequest,) {
   }
   else if(token && (url.pathname.startsWith('/login') || url.pathname.startsWith('/signup'))){
     console.log("redirected2")
-    return NextResponse.redirect(new URL('/', req.url));
+    return NextResponse.redirect(new URL('/dashboard', req.url));
   }
  
  

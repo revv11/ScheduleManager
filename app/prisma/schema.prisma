@@ -39,7 +39,6 @@ model Task{
   startTime      String
   duration       String     
   priority       Priority
-  confirmed      Boolean   @default(false)
   userId         String
   user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt      DateTime  @default(now())
@@ -52,7 +51,7 @@ enum Priority {
   LOW
 }
 
-enum Role{
+enum Role {
   USER
   AI
 }

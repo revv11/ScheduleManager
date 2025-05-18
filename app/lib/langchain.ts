@@ -55,11 +55,11 @@ const egoutput = {
   "type": "output",
   "output": {
     "tasks": [
-      { "name": "Study DSA/OOPS", "duration": 240, "priority": "high", "startTime": "16:00" },
-      { "name": "Short Break", "duration": 15, "priority": "low", "startTime": "20:00" },
-      { "name": "Practice Guitar", "duration": 60, "priority": "medium", "startTime": "20:15" },
-      { "name": "Attend Family Function", "duration": 90, "priority": "medium", "startTime": "22:00" },
-      { "name": "Read a Book", "duration": 60, "priority": "low", "startTime": "23:30" }
+      { "name": "Study DSA/OOPS", "duration": 240, "priority": "high", "startTime": "2025-05-17T15:22:00" },
+      { "name": "Short Break", "duration": 15, "priority": "low", "startTime": "2025-05-18T15:02:00" },
+      { "name": "Practice Guitar", "duration": 60, "priority": "medium", "startTime": "2025-05-17T15:02:15" },
+      { "name": "Attend Family Function", "duration": 90, "priority": "medium", "startTime": "2025-05-17T15:22:00" },
+      { "name": "Read a Book", "duration": 60, "priority": "low", "startTime": "2025-05-17T15:22:00" }
     ],
     "description": "To ensure all tasks are completed, start studying DSA/OOPS earlier at 4 PM. Follow it with a short break and guitar practice. Attend the family function at 10 PM and unwind by reading a book afterward.",
     "updated": true
@@ -101,7 +101,7 @@ async function fetchMessagesFromDB(userId: string){
           ? new HumanMessage(doc.content)
           : new AIMessage(doc.content)
     );
-    console.log(chatHistory)
+
     return chatHistory
     
 }
@@ -111,19 +111,19 @@ async function fetchMessagesFromDB(userId: string){
 export async function AIResponse(q: string, userId: string){
     const time = formatDateTime(new Date())
     const chats = await fetchMessagesFromDB(userId);
-    console.log("chats",chats)
+ 
 
     const lastsug = await getLastSuggestion(userId)
     const lastSuggestion =  JSON.stringify(lastsug)
     
-    console.log(lastSuggestion)
+ 
 
     const historyAwareRetrievalPrompt = ChatPromptTemplate.fromMessages([
         [
           "system",
           `You are an AI scheduling assistant that helps users plan their day efficiently.
       
-          IMPORTANT: Respond ONLY in valid JSON format with this possible type:
+          IMPORTANT: Respond ONLY in valid JSON format with this possible type: (do not give plain text output like "Hi im an AI scheduling assistant. How can i help you?\n")
           - {{ "type": "output", "output": {{ "tasks": [task details], "description": [give a brief overview of what did you come up with], "updated": [boolean value based on whether the tasks in this response is different to the previous response ] }} }}
           
           Rules for schedule generation:
@@ -158,7 +158,7 @@ export async function AIResponse(q: string, userId: string){
           - In case the user wants to edit the schedule return the entire schedule again including the new addition
           - Even if the user ask miscellaneous question for example "Hey, what was my last message" give the answer in the above stated format.
           - You also have the current local time of the user so make the schedule accordingly
-          
+          - The type of startTIme is javascript Date() type. example "2025-05-17T15:22:00"
 
           user local time: {time}
 
@@ -189,7 +189,12 @@ export async function AIResponse(q: string, userId: string){
         
           {{"type": "output", "output": {{"tasks": [], "description": "Hi im an AI scheduling assistant. How can i help you? ", "updated": false}} }}
 
-          THIS IS JUST AN EXAMPLE RESPOND TO USER AS PER THEIR QUESTION
+          THIS IS JUST A SAMPLE EXAMPLE RESPOND TO USER AS PER THEIR QUESTION. DO NOT TAKE THE REFERENCE OF THIS
+
+
+
+          IMPORTANT: Respond ONLY in valid JSON format with this possible type: (do not give plain text output like "Hi im an AI scheduling assistant. How can i help you?\n")
+          - {{ "type": "output", "output": {{ "tasks": [task details], "description": [give a brief overview of what did you come up with], "updated": [boolean value based on whether the tasks in this response is different to the previous response ] }} }}
       `
         ],
         ...chats,
@@ -212,11 +217,11 @@ export async function AIResponse(q: string, userId: string){
         eglast: JSON.stringify(eglast),
         time
       })
-      
+      console.log("raw res----------------------------------------------------------------------------------------",res)
       const resstring = res.content.toString()
 
       const finalres = extractJsonFromCodeBlock(resstring)
-      console.log("finalres",JSON.stringify(finalres))
+      console.log("finalres----------------------------------------------------------------",JSON.stringify(finalres))
       
 
     return finalres

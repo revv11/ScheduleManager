@@ -5,7 +5,7 @@ function AICard({task}: {task:TaskType}) {
   return (
     <div className="border-b border-gray-100 pb-4">
         <div className="flex justify-between items-start mb-1">
-            <h3 className="font-medium">{task.name}</h3>
+            <h3 className="font-medium">{task.title}</h3>
             <div className="flex items-center text-gray-500 text-sm">
                 <Clock className="h-3.5 w-3.5 mr-1" />
                 <span>{task.duration} minutes</span>

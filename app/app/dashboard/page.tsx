@@ -20,7 +20,7 @@ import Progress from "@/components/custom/Progress"
 export default function Home() {
   return (
     <div className="min-full bg-zinc-900 text-zinc-100">
-      {/* Header */}
+
      
 
 

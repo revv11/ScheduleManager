@@ -24,7 +24,7 @@ export default function Signup(){
       e.preventDefault()
       try{
         const res = await signIn("google", {redirect:false})
-        router.push('/details')
+        router.push('/dashboard')
       }
       catch(e){
           console.log(e)

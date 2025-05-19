@@ -86,17 +86,30 @@ export default function Appbar(){
         <div className="flex items-center justify-between">
           <h1 className="text-xl font-bold text-purple-400">Plan Your Day</h1>
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-4">
-              <Avatar className="h-8 w-8 border  border-purple-500/20">
-                <AvatarImage src={session.data?.user?.image ?? "https://media.istockphoto.com/id/2151669184/vector/vector-flat-illustration-in-grayscale-avatar-user-profile-person-icon-gender-neutral.jpg?s=612x612&w=0&k=20&c=UEa7oHoOL30ynvmJzSCIPrwwopJdfqzBs0q69ezQoM8="} alt="" />
-                {/* <AvatarFallback className="bg-purple-900 text-purple-200">UA</AvatarFallback> */}
-              </Avatar>
-              <span className="font-medium">{session.data?.user?.name}</span>
-              <Button onClick={()=>(signOut())} variant="outline" className="border-zinc-700 text-zinc-300 hover:bg-zinc-800 hover:text-white">
-                <LogOut className="mr-2 h-4 w-4" />
-                Logout
-              </Button>
-            </div>
+            {session.data?.user?
+              <div className="flex items-center gap-4">
+                <Avatar className="h-8 w-8 border  border-purple-500/20">
+                  <AvatarImage src={session.data?.user?.image ?? "https://media.istockphoto.com/id/2151669184/vector/vector-flat-illustration-in-grayscale-avatar-user-profile-person-icon-gender-neutral.jpg?s=612x612&w=0&k=20&c=UEa7oHoOL30ynvmJzSCIPrwwopJdfqzBs0q69ezQoM8="} alt="" />
+                  {/* <AvatarFallback className="bg-purple-900 text-purple-200">UA</AvatarFallback> */}
+                </Avatar>
+                <span className="font-medium">{session.data?.user?.name}</span>
+                <Button onClick={()=>(signOut())} variant="outline" className="border-zinc-700 text-zinc-300 hover:bg-zinc-800 hover:text-white">
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Logout
+                </Button>
+              </div>
+            :
+              <div className="flex items-center gap-4">
+                <Link href={"/login"}>
+                  <Button variant="outline" className="border-zinc-700 text-zinc-300 hover:bg-zinc-800 hover:text-white">
+                    Log In
+                  </Button>
+                </Link>
+                <Link href={"/signup"}>
+                  <Button className="bg-purple-600 hover:bg-purple-700 text-white">Sign Up Free</Button>
+                </Link>
+              </div>
+            }
           </div>
         </div>
       </header>

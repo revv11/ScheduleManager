@@ -24,7 +24,14 @@ export default function RootLayout({
           <Toaster position="top-right" />
           <div className="h-screen w-full">
             
-              {children}
+          <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
+              <div className="h-full-full">
+
+                {children}
+
+
+              </div>
+          </ThemeProvider>
        
           </div>
         </AuthContext>

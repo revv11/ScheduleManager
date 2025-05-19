@@ -142,7 +142,7 @@ export async function AIResponse(q: string, userId: string){
                 "name": "Task Name",
                 "duration": minutes,
                 "priority": "high/medium/low",
-                "startTime": "HH:MM"
+                "startTime": "YYYY-MM-DDTHH:MM:SS"
               }}
             ]
           }}
@@ -195,6 +195,7 @@ export async function AIResponse(q: string, userId: string){
 
           IMPORTANT: Respond ONLY in valid JSON format with this possible type: (do not give plain text output like "Hi im an AI scheduling assistant. How can i help you?\n")
           - {{ "type": "output", "output": {{ "tasks": [task details], "description": [give a brief overview of what did you come up with], "updated": [boolean value based on whether the tasks in this response is different to the previous response ] }} }}
+          - USE ONLY ISO 8601 is an international standard for representing date and time FOR startTime of tasks i.e YYYY-MM-DDTHH:MM:SS
       `
         ],
         ...chats,

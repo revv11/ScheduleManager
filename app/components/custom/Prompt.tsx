@@ -55,7 +55,7 @@ function Prompt() {
           catch(e:any){
             
             console.log("database error",e.message)
-            alert(e.message+ "gg ho gya")
+            toast.error("Database Error")
           }
         }
         
@@ -145,7 +145,21 @@ function Prompt() {
               AI Assistant
             </CardTitle>
           </CardHeader>
+          
           <CardContent className="p-0 flex flex-col h-[calc(100vh-220px)]">
+            {messages.length===0?
+            <ScrollArea className="flex-1 p-4 h-[calc(100vh-300px)]">
+              <div className="text-sm text-zinc-400 px-4 py-6 space-y-3">
+                <h2 className="text-lg font-semibold text-white">Welcome to Your AI Schedule Assistant</h2>
+                <ul className="list-disc list-inside space-y-2">
+                  <li><strong>Create Your Schedule</strong> – Start by adding tasks with a title, duration, and start time.</li>
+                  <li><strong>Use AI Recommendations</strong> – Click “AI Recommendations” to get a smart schedule based on your goals.</li>
+                  <li><strong>Chat with the Assistant</strong> – Try asking: <br /><code>"Suggest a study plan for today."</code> or <code>"Add a 30-minute walk."</code></li>
+                  <li><strong>Track Your Progress</strong> – The Current Task panel updates in real time!</li>
+                </ul>
+              </div>
+            </ScrollArea>
+           :
             <ScrollArea  className="flex-1 p-4 h-[calc(100vh-300px)]">
               <div className="space-y-4">
                 {messages.map((message, index) => (
@@ -177,6 +191,7 @@ function Prompt() {
               <div ref={bottomOfChatRef}/>
               </div>
             </ScrollArea >
+          }
             <div className="p-4 border-t border-zinc-800 mt-auto">
               <form onSubmit={handleSubmit} className="flex gap-2">
                 <Input

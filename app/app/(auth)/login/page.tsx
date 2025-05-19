@@ -22,6 +22,7 @@ export default function Login(){
         e.preventDefault()
         try{
             await signIn("google")
+            router.push('/dashboard')
             
         }
         catch(e){

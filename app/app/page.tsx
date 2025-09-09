@@ -3,6 +3,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Clock, BarChart3, BrainCircuit, MessageSquare, CheckCircle2, Sparkles, Bell, Laptop } from "lucide-react"
 import Link from "next/link"
 import Appbar from "@/components/custom/Navbar"
+import Image from "next/image"
 export default function LandingPage() {
   return (
     <div className="min-h-screen bg-zinc-900 text-zinc-100">
@@ -37,10 +38,12 @@ export default function LandingPage() {
             <div className="relative lg:block hidden">
               <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-600 to-purple-400 rounded-lg blur-sm opacity-75"></div>
               <div className="relative bg-zinc-950 border border-zinc-800 rounded-lg overflow-hidden">
-                <img
+                <Image
                   src="/demo.png"
                   alt="AI Schedule Planner Dashboard"
                   className=" h-[400px] rounded-lg"
+                  width={400}
+                  height={400}
                 />
               </div>
             </div>

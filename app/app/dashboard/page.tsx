@@ -1,16 +1,9 @@
 
 
 
-import ScheduleCard from "@/components/custom/ScheduleCard"
+
 import Prompt from "@/components/custom/Prompt"
 import AIRec from "@/components/custom/AIRec"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
-import { Clock, Calendar, Send, MessageSquare } from "lucide-react"
 import Progress from "@/components/custom/Progress"
 
 

@@ -1,0 +1,15 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: scheduleDb
+    restart: always
+    environment:
+      POSTGRES_USER: schedule
+      POSTGRES_PASSWORD: schedule
+      POSTGRES_DB: schedule
+    ports:
+      - "5430:5432"
+    volumes:
+      - ./postgres_data:/var/lib/postgresql/data

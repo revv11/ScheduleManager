@@ -4,8 +4,6 @@ import { ChatPromptTemplate } from "@langchain/core/prompts";
 import { ChatGoogleGenerativeAI } from "@langchain/google-genai";
 import { RunnableSequence } from "@langchain/core/runnables";
 
-
-
 async function getLastSuggestion(userId: string){
   try{
     const res = await db.task.findMany({
@@ -13,7 +11,6 @@ async function getLastSuggestion(userId: string){
          userId
       }
     })
-
     return({lastsuggestion: res})
   }
   catch(e){
@@ -22,16 +19,27 @@ async function getLastSuggestion(userId: string){
   }
 }
 
-
-function formatDateTime(date: Date) {
-  const dd = String(date.getDate()).padStart(2, '0');
-  const mm = String(date.getMonth() + 1).padStart(2, '0'); // Months are 0-indexed
-  const yy = String(date.getFullYear()).slice(-2);
-  const time = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-  return `${dd}/${mm}${yy} ${time}`;
+// Helper function to get current date and time in ISO format
+function getCurrentDateTime() {
+  const now = new Date();
+  return {
+    isoString: now.toISOString(),
+    dateOnly: now.toISOString().split('T')[0], // YYYY-MM-DD
+    timeOnly: now.toTimeString().split(' ')[0], // HH:MM:SS
+    humanReadable: now.toLocaleString(),
+    timestamp: now.getTime()
+  };
 }
 
+// Format datetime for display purposes
+function formatDateTime(date: Date) {
+  const dd = String(date.getDate()).padStart(2, '0');
+  const mm = String(date.getMonth() + 1).padStart(2, '0');
+  const yyyy = date.getFullYear();
+  const time = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  
+  return `${dd}/${mm}/${yyyy} ${time}`;
+}
 
 const egprompt = {
   "type": "user",
@@ -50,44 +58,63 @@ const eglast = {
   }
 }
 
-
-const egoutput = {
-  "type": "output",
-  "output": {
-    "tasks": [
-      { "name": "Study DSA/OOPS", "duration": 240, "priority": "high", "startTime": "2025-05-17T15:22:00" },
-      { "name": "Short Break", "duration": 15, "priority": "low", "startTime": "2025-05-18T15:02:00" },
-      { "name": "Practice Guitar", "duration": 60, "priority": "medium", "startTime": "2025-05-17T15:02:15" },
-      { "name": "Attend Family Function", "duration": 90, "priority": "medium", "startTime": "2025-05-17T15:22:00" },
-      { "name": "Read a Book", "duration": 60, "priority": "low", "startTime": "2025-05-17T15:22:00" }
-    ],
-    "description": "To ensure all tasks are completed, start studying DSA/OOPS earlier at 4 PM. Follow it with a short break and guitar practice. Attend the family function at 10 PM and unwind by reading a book afterward.",
-    "updated": true
+// Dynamic example output with current date
+function getExampleOutput() {
+  const currentDate = new Date().toISOString().split('T')[0];
+  return {
+    "type": "output",
+    "output": {
+      "tasks": [
+        { "name": "Study DSA/OOPS", "duration": 240, "priority": "high", "startTime": `${currentDate}T15:22:00` },
+        { "name": "Short Break", "duration": 15, "priority": "low", "startTime": `${currentDate}T19:02:00` },
+        { "name": "Practice Guitar", "duration": 60, "priority": "medium", "startTime": `${currentDate}T19:17:00` },
+        { "name": "Attend Family Function", "duration": 90, "priority": "medium", "startTime": `${currentDate}T22:00:00` },
+        { "name": "Read a Book", "duration": 60, "priority": "low", "startTime": `${currentDate}T23:30:00` }
+      ],
+      "description": "To ensure all tasks are completed, start studying DSA/OOPS earlier at 4 PM. Follow it with a short break and guitar practice. Attend the family function at 10 PM and unwind by reading a book afterward.",
+      "updated": true
+    }
   }
 }
 
-
 export const model = new ChatGoogleGenerativeAI({
-   
     model : "gemini-2.0-flash",
 })
 
 function extractJsonFromCodeBlock(str:string) {
   if (typeof str !== 'string') throw new Error('Input must be a string');
 
-  // Remove leading and trailing backticks and "json"
-  const cleaned = str.replace(/```json|```/g, '').trim();
+  console.log("Original string:", str);
+  
+  let cleaned = str;
+  
+  const jsonBlockMatch = str.match(/```json\s*([\s\S]*?)\s*```/);
+  if (jsonBlockMatch) {
+    cleaned = jsonBlockMatch[1].trim();
+  } else {
+    const jsonMatch = str.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      cleaned = jsonMatch[0];
+    } else {
+      console.error('No JSON found in response');
+      return null;
+    }
+  }
+  
+  console.log("Cleaned string:", cleaned);
 
   try {
-    return JSON.parse(cleaned);
+    const parsed = JSON.parse(cleaned);
+    console.log("Successfully parsed JSON:", parsed);
+    return parsed;
   } catch (err:any) {
     console.error('Failed to parse JSON:', err.message);
+    console.error('Cleaned string that failed to parse:', cleaned);
     return null;
   }
 }
 
 async function fetchMessagesFromDB(userId: string){
-    
     const res = await db.message.findMany({
         where: {
             userId
@@ -103,28 +130,46 @@ async function fetchMessagesFromDB(userId: string){
     );
 
     return chatHistory
-    
 }
 
-
-
 export async function AIResponse(q: string, userId: string){
-    const time = formatDateTime(new Date())
+    const dateTimeInfo = getCurrentDateTime();
     const chats = await fetchMessagesFromDB(userId);
- 
-
-    const lastsug = await getLastSuggestion(userId)
-    const lastSuggestion =  JSON.stringify(lastsug)
+    const lastsug = await getLastSuggestion(userId);
+    const lastSuggestion = JSON.stringify(lastsug);
+    const egoutput = getExampleOutput();
     
- 
-
     const historyAwareRetrievalPrompt = ChatPromptTemplate.fromMessages([
         [
           "system",
           `You are an AI scheduling assistant that helps users plan their day efficiently.
       
-          IMPORTANT: Respond ONLY in valid JSON format with this possible type: (do not give plain text output like "Hi im an AI scheduling assistant. How can i help you?\n")
-          - {{ "type": "output", "output": {{ "tasks": [task details], "description": [give a brief overview of what did you come up with], "updated": [boolean value based on whether the tasks in this response is different to the previous response ] }} }}
+          CRITICAL: You MUST respond ONLY with valid JSON wrapped in \`\`\`json\`\`\` code blocks. Never use plain text.
+          
+          CURRENT DATE AND TIME INFORMATION:
+          - Current ISO DateTime: {currentISODateTime}
+          - Current Date: {currentDate}
+          - Current Time: {currentTime}
+          - Human Readable: {humanReadableTime}
+          
+          CRITICAL TIME RULES:
+          1. ALL task startTimes MUST be in ISO 8601 format: YYYY-MM-DDTHH:MM:SS
+          2. ALL task startTimes MUST be AFTER the current time ({currentISODateTime})
+          3. Use the CURRENT DATE ({currentDate}) for today's tasks
+          4. For tasks tomorrow, add one day to the current date
+          5. NEVER schedule tasks in the past
+          
+          REQUIRED FORMAT:
+          \`\`\`json
+          {{
+            "type": "output",
+            "output": {{
+              "tasks": [task details],
+              "description": "brief overview of what you came up with",
+              "updated": true/false
+            }}
+          }}
+          \`\`\`
           
           Rules for schedule generation:
           - Consider existing commitments
@@ -147,7 +192,7 @@ export async function AIResponse(q: string, userId: string){
             ]
           }}
           
-          you also have the context of the previous suggestion as well as the whole chat history
+          Context from previous interactions:
           lastsuggestion: {lastSuggestion}
           
           Additional Constraints:
@@ -156,74 +201,107 @@ export async function AIResponse(q: string, userId: string){
           - Consider potential interruptions or context switching
           - Suggest short breaks between intense tasks
           - In case the user wants to edit the schedule return the entire schedule again including the new addition
-          - Even if the user ask miscellaneous question for example "Hey, what was my last message" give the answer in the above stated format.
-          - You also have the current local time of the user so make the schedule accordingly
-          - The type of startTIme is javascript Date() type. example "2025-05-17T15:22:00"
+          - Even if the user asks miscellaneous questions, give the answer in the above stated format
+          - Focus on scheduling tasks and providing helpful responses about task management
+          
+          TIME VALIDATION:
+          Before outputting any task, verify:
+          1. The startTime is in format: YYYY-MM-DDTHH:MM:SS
+          2. The date part matches or is after {currentDate}
+          3. If the date is today ({currentDate}), the time must be after {currentTime}
+          
+          Example of CORRECT startTime formats:
+          - "{currentDate}T14:30:00" (2:30 PM today, if current time is before that)
+          - "{currentDate}T18:00:00" (6:00 PM today, if current time is before that)
+          
+          Example of INCORRECT formats (DO NOT USE):
+          - "2024-07-02T15:00:00" (wrong year)
+          - "18:00" (missing date)
+          - "2025-01-17 15:00:00" (wrong format - missing T separator)
 
-          user local time: {time}
-
-          so the response will be:
-          {{"type": "output", "output": {{"tasks": [], "description": "your last message was: I have a test tomorrow of DSA, need to study OOPS, also I need to practice guitar for 1 hour for my upcoming show which is day after tomorrow ", "updated": false}} }}
-
-          Example interaction demonstrating ideal response (each line should be a single JSON object i.e respond 1 json at a time. The response you give should be the prompt for the next step):
+          Example interaction demonstrating ideal response:
           {egprompt}
-
-          (Now first check what all tasks are there in lastsuggestion if it exists. If there are clashes you need to reschedule the tasks to ensure the user can complete all the tasks
-          lets say the lastsuggestion from you was:
-          {eglast}
-
-
-
-
-          you need to reschedule the timetable in the stated format
-
-
-          //FINAL OUTPUT YOU WILL GENERATE
+          
+          If there are existing tasks in lastsuggestion, check for conflicts and reschedule accordingly.
+          
+          Example output structure:
           {egoutput}
 
-          //EXAMPLE 2
-          Even if the user ask anything else than a schedule request for example give the answer in the above stated format.
-          FOR EXAMPLE
+          For non-scheduling queries (like "Hi"), respond in the required JSON format:
+          \`\`\`json
+          {{
+            "type": "output",
+            "output": {{
+              "tasks": [],
+              "description": "Your response here",
+              "updated": false
+            }}
+          }}
+          \`\`\`
 
-          {{"type": "user", "user": "Hi"}} 
-        
-          {{"type": "output", "output": {{"tasks": [], "description": "Hi im an AI scheduling assistant. How can i help you? ", "updated": false}} }}
-
-          THIS IS JUST A SAMPLE EXAMPLE RESPOND TO USER AS PER THEIR QUESTION. DO NOT TAKE THE REFERENCE OF THIS
-
-
-
-          IMPORTANT: Respond ONLY in valid JSON format with this possible type: (do not give plain text output like "Hi im an AI scheduling assistant. How can i help you?\n")
-          - {{ "type": "output", "output": {{ "tasks": [task details], "description": [give a brief overview of what did you come up with], "updated": [boolean value based on whether the tasks in this response is different to the previous response ] }} }}
-          - USE ONLY ISO 8601 is an international standard for representing date and time FOR startTime of tasks i.e YYYY-MM-DDTHH:MM:SS
-      `
+          REMEMBER: 
+          - Current time is {currentISODateTime}
+          - All tasks must be scheduled AFTER this time
+          - Use ISO 8601 format: YYYY-MM-DDTHH:MM:SS
+          `
         ],
         ...chats,
         ["user", "{input}"],
-        
       ],
-     
     );
-      const chain = RunnableSequence.from([
+    
+    const chain = RunnableSequence.from([
         historyAwareRetrievalPrompt,
         model
-      ]);
-      
-      const res = await chain.invoke({
+    ]);
+    
+    console.log("Current DateTime Info:", dateTimeInfo);
+    
+    const res = await chain.invoke({
         llm: model,
         lastSuggestion,
         input: q,
         egoutput: JSON.stringify(egoutput),
         egprompt: JSON.stringify(egprompt),
         eglast: JSON.stringify(eglast),
-        time
-      })
-      console.log("raw res----------------------------------------------------------------------------------------",res)
-      const resstring = res.content.toString()
+        currentISODateTime: dateTimeInfo.isoString,
+        currentDate: dateTimeInfo.dateOnly,
+        currentTime: dateTimeInfo.timeOnly,
+        humanReadableTime: dateTimeInfo.humanReadable
+    });
+    
+    const resstring = res.content.toString();
+    console.log("Raw response string:", resstring);
 
-      const finalres = extractJsonFromCodeBlock(resstring)
-      console.log("finalres----------------------------------------------------------------",JSON.stringify(finalres))
-      
+    const finalres = extractJsonFromCodeBlock(resstring);
+    console.log("Final result:", JSON.stringify(finalres));
+    
+    if (!finalres) {
+        console.error("Failed to parse JSON from AI response");
+        return {
+            type: "output",
+            output: {
+                tasks: [],
+                description: "Sorry, I couldn't process your request properly. Please try again.",
+                updated: false
+            }
+        };
+    }
+    
+    // Validate that all task times are in the future
+    if (finalres.output && finalres.output.tasks) {
+        const now = new Date();
+        finalres.output.tasks = finalres.output.tasks.filter((task: any) => {
+            if (task.startTime) {
+                const taskTime = new Date(task.startTime);
+                if (taskTime <= now) {
+                    console.warn(`Task "${task.name}" has past time ${task.startTime}, filtering out`);
+                    return false;
+                }
+            }
+            return true;
+        });
+    }
 
-    return finalres
+    return finalres;
 }

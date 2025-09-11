@@ -32,7 +32,10 @@ function ProgUpdate() {
       const start = dayjs(task.startTime);
       const duration = Number(task.duration);
       const end = start.add(duration, "minute");
-      if (now.isAfter(end)) {
+      // Add 5-minute buffer to prevent immediate deletion
+      const bufferEnd = end.add(5, "minute");
+      if (now.isAfter(bufferEnd)) {
+        console.log("Auto-deleting completed task:", task.title);
         setTasks(tasks.slice(1));
         await axios.post('api/clear', {id: tasks[0]?.id})
       }

@@ -46,7 +46,7 @@ function AIRec() {
           }
         }
         run()
-    },[])
+    },[setTasks])
 
     if(tasks.length===0){
       return(

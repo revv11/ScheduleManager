@@ -118,7 +118,7 @@ export default function LandingPage() {
         <div className="container mx-auto max-w-7xl">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">Frequently Asked Questions</h2>
-            <p className="text-xl text-zinc-300 max-w-3xl mx-auto">Got questions? We've got answers.</p>
+            <p className="text-xl text-zinc-300 max-w-3xl mx-auto">Got questions? We&apos;ve got answers.</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto">

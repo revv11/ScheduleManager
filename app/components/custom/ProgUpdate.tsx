@@ -42,7 +42,7 @@ function ProgUpdate() {
 
     }
     run()
-  }, [now, task]);
+  }, [now, task, setTasks, tasks]);
 
   if (!task) {
     return <div className="bg-zinc-900 border border-zinc-800 rounded-lg p-4 h-[100px] flex justify-center items-center">No tasks remaining.</div>;

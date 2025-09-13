@@ -154,7 +154,7 @@ function Prompt() {
                 <ul className="list-disc list-inside space-y-2">
                   <li><strong>Create Your Schedule</strong> – Start by adding tasks with a title, duration, and start time.</li>
                   <li><strong>Use AI Recommendations</strong> – Click “AI Recommendations” to get a smart schedule based on your goals.</li>
-                  <li><strong>Chat with the Assistant</strong> – Try asking: <br /><code>"Suggest a study plan for today."</code> or <code>"Add a 30-minute walk."</code></li>
+                  <li><strong>Chat with the Assistant</strong> – Try asking: <br /><code>&quot;Suggest a study plan for today.&quot;</code> or <code>&quot;Add a 30-minute walk.&quot;</code></li>
                   <li><strong>Track Your Progress</strong> – The Current Task panel updates in real time!</li>
                 </ul>
               </div>

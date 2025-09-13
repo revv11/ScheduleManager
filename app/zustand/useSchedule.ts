@@ -7,7 +7,6 @@ import {create } from 'zustand'
 interface ConversationState{
     
     tasks: TaskType[];
-    
     setTasks: (messages: TaskType[]) =>void;
     
 }

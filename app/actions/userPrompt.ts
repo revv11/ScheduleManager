@@ -40,12 +40,7 @@ export default async function userPrompt(msg: string){
             NewMessage(msg, userId)
         ])
         
-        console.log("AI Response received:", JSON.stringify(res1, null, 2));
-        console.log("AI Response output:", res1.output);
-        console.log("Updated flag:", res1.output?.updated);
         if(res1.output?.updated===true){
-            console.log("Tasks to be created:", res1.output.tasks);
-            console.log("AI Response output:", JSON.stringify(res1.output, null, 2));
             
             try {
                 // Delete existing tasks first
@@ -54,11 +49,8 @@ export default async function userPrompt(msg: string){
                         userId:session.user.id,
                     }
                 })
-                console.log("Deleted tasks count:", deleteResult.count);
-                
                 // Then create new tasks
                 const tasksToCreate = res1.output.tasks.map((task: any) => {
-                    console.log("Processing task:", task);
                     return {
                         title: task.name,
                         startTime: String(task.startTime),
@@ -67,24 +59,14 @@ export default async function userPrompt(msg: string){
                         userId: session.user.id,
                     };
                 });
-                console.log("Tasks data to create:", JSON.stringify(tasksToCreate, null, 2));
                 
                 const createResult = await db.task.createMany({
                     data: tasksToCreate
                 });
-                console.log("Created tasks count:", createResult.count);
-                
-                // Verify the tasks were actually created
-                const verifyTasks = await db.task.findMany({
-                    where: { userId: session.user.id }
-                });
-                console.log("Tasks in database after creation:", verifyTasks);
             } catch (taskError) {
                 console.error("Error in task operations:", taskError);
                 throw taskError; // Re-throw to be caught by outer catch
             }
-        } else {
-            console.log("No tasks to update. Updated flag:", res1.output?.updated);
         }
 
 
@@ -97,11 +79,6 @@ export default async function userPrompt(msg: string){
             }
         })
 
-        // Final verification - check if tasks are still in database
-        const finalTasks = await db.task.findMany({
-            where: { userId: session.user.id }
-        });
-        console.log("Final tasks in database:", finalTasks);
 
         return {success: true, message: finalres}
 

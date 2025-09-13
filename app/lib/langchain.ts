@@ -83,8 +83,6 @@ export const model = new ChatGoogleGenerativeAI({
 
 function extractJsonFromCodeBlock(str:string) {
   if (typeof str !== 'string') throw new Error('Input must be a string');
-
-  console.log("Original string:", str);
   
   let cleaned = str;
   
@@ -100,12 +98,9 @@ function extractJsonFromCodeBlock(str:string) {
       return null;
     }
   }
-  
-  console.log("Cleaned string:", cleaned);
 
   try {
     const parsed = JSON.parse(cleaned);
-    console.log("Successfully parsed JSON:", parsed);
     return parsed;
   } catch (err:any) {
     console.error('Failed to parse JSON:', err.message);
@@ -255,8 +250,6 @@ export async function AIResponse(q: string, userId: string){
         model
     ]);
     
-    console.log("Current DateTime Info:", dateTimeInfo);
-    
     const res = await chain.invoke({
         llm: model,
         lastSuggestion,
@@ -271,10 +264,8 @@ export async function AIResponse(q: string, userId: string){
     });
     
     const resstring = res.content.toString();
-    console.log("Raw response string:", resstring);
 
     const finalres = extractJsonFromCodeBlock(resstring);
-    console.log("Final result:", JSON.stringify(finalres));
     
     if (!finalres) {
         console.error("Failed to parse JSON from AI response");

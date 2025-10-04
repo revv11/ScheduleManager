@@ -1,17 +1,13 @@
 "use client"
 import React, { useEffect } from 'react'
-import AICard from './AICard'
 import useSchedule from '@/zustand/useSchedule'
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
-import { Clock, Calendar, Send, MessageSquare } from "lucide-react"
+import { Clock } from "lucide-react"
 import axios from 'axios'
 import dayjs from 'dayjs'
-
+import { toast } from "react-hot-toast"
 
 function PriorityBadge({ priority }:any) {
   const colors:any = {
@@ -42,7 +38,8 @@ function AIRec() {
 
           }
           catch(e){
-
+            console.log("Error fetching tasks:", e);
+            toast.error("Error fetching tasks");
           }
         }
         run()
@@ -50,7 +47,7 @@ function AIRec() {
 
     if(tasks.length===0){
       return(
-        <Card className='bg-zinc-950 border-zinc-800 md:col-span-1 ' >
+        <Card className='bg-zinc-950 border-zinc-800 md:col-span-1 h-[calc(100vh-150px)]' >
           <CardHeader className="border-b border-zinc-800 pb-3">
             <CardTitle className="text-lg font-semibold text-white">AI Recommendations</CardTitle>
           </CardHeader>
@@ -65,7 +62,7 @@ function AIRec() {
 
     return (
         
-        <Card className="bg-zinc-950 border-zinc-800 md:col-span-1">
+        <Card className="bg-zinc-950 border-zinc-800 md:col-span-1 h-[calc(100vh-130px)]">
           <CardHeader className="border-b border-zinc-800 pb-3">
             <CardTitle className="text-lg font-semibold text-white">AI Recommendations</CardTitle>
           </CardHeader>

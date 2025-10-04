@@ -3,10 +3,8 @@
 @custom-variant dark (&:is(.dark *));
 
 @plugin "daisyui" {
-  themes: light --default
-  
+  themes: light --default;
 }
-
 
 @layer base {
   :root {
@@ -54,8 +52,6 @@
     --ring: 267 100% 60%;
   }
 }
-
-
 
 @theme {
   /* Container settings (center and padding need to be handled in layout) */

@@ -8,7 +8,7 @@ import {
   Clock,
 } from "lucide-react"
 import { useState, useEffect } from "react"
-
+import { toast } from "react-hot-toast"
 
 
 function ProgUpdate() {
@@ -35,9 +35,16 @@ function ProgUpdate() {
       // Add 5-minute buffer to prevent immediate deletion
       const bufferEnd = end.add(5, "minute");
       if (now.isAfter(bufferEnd)) {
-        console.log("Auto-deleting completed task:", task.title);
-        setTasks(tasks.slice(1));
-        await axios.post('api/clear', {id: tasks[0]?.id})
+        try{
+          console.log("Auto-deleting completed task:", task.title);
+          await axios.post('api/clear', {id: tasks[0]?.id})
+          setTasks(tasks.slice(1));
+          toast.success("Task completed");
+        }
+        catch(e:any){
+          console.log("Error auto-deleting completed task:", e);
+          toast.error("Error auto-deleting completed task");
+        }
       }
 
     }

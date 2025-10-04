@@ -3,8 +3,8 @@ import { Avatar, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { useSession } from "next-auth/react"
 import { signOut } from "next-auth/react"
-import {  AvatarFallback  } from "@/components/ui/avatar"
 import { LogOut, Calendar, Send, MessageSquare } from "lucide-react"
+import SkeletonWrapper from "./SkeletonWrapper"
 
 import Link from "next/link"
 import { useEffect, useState } from "react"
@@ -13,10 +13,15 @@ export default function Appbar(){
   const [loading, setLoading] = useState(true)
   const session  = useSession()
   useEffect(()=>{
-    if(session.data?.user){
+    if(session.status != "loading" && session.data?.user){
       console.log(session)
       setLoading(false)
     }
+    else if(session.status != "loading" && !session.data?.user){
+      setLoading(false)
+    }
+    console.log(session)
+    // setLoading(false)
   },[session])
 
     
@@ -82,34 +87,45 @@ export default function Appbar(){
 
 
     // new header
-     <header className="border-b border-zinc-800 bg-zinc-950 px-6 py-3 sticky top-0 z-10">
+     <header className="border-b border-zinc-800 bg-zinc-950 px-6 py-3 sticky top-0 z-10 h-16">
         <div className="flex items-center justify-between">
           <h1 className="text-xl font-bold text-purple-400">Plan Your Day</h1>
           <div className="flex items-center gap-4">
-            {session.data?.user?
-              <div className="flex items-center gap-4">
-                <Avatar className="h-8 w-8 border  border-purple-500/20">
-                  <AvatarImage src={session.data?.user?.image ?? "https://media.istockphoto.com/id/2151669184/vector/vector-flat-illustration-in-grayscale-avatar-user-profile-person-icon-gender-neutral.jpg?s=612x612&w=0&k=20&c=UEa7oHoOL30ynvmJzSCIPrwwopJdfqzBs0q69ezQoM8="} alt="" />
-                  {/* <AvatarFallback className="bg-purple-900 text-purple-200">UA</AvatarFallback> */}
-                </Avatar>
-                <span className="font-medium">{session.data?.user?.name}</span>
-                <Button onClick={()=>(signOut())} variant="outline" className="border-zinc-700 text-zinc-300 hover:bg-zinc-800 hover:text-white">
-                  <LogOut className="mr-2 h-4 w-4" />
-                  Logout
-                </Button>
-              </div>
-            :
-              <div className="flex items-center gap-4">
-                <Link href={"/login"}>
-                  <Button variant="outline" className="border-zinc-700 text-zinc-300 hover:bg-zinc-800 hover:text-white">
-                    Log In
+            <SkeletonWrapper
+              loading={loading}
+              skeleton={
+                <div className="flex items-center gap-4">
+                  <div className="h-8 w-8 rounded-full bg-zinc-800 animate-pulse" />
+                  <div className="h-4 w-20 bg-zinc-800 rounded animate-pulse" />
+                  <div className="h-8 w-16 bg-zinc-800 rounded animate-pulse" />
+                </div>
+              }
+            >
+              {session.data?.user?
+                <div className="flex items-center gap-4">
+                  <Avatar className="h-8 w-8 border  border-purple-500/20">
+                    <AvatarImage src={session.data?.user?.image ?? "https://media.istockphoto.com/id/2151669184/vector/vector-flat-illustration-in-grayscale-avatar-user-profile-person-icon-gender-neutral.jpg?s=612x612&w=0&k=20&c=UEa7oHoOL30ynvmJzSCIPrwwopJdfqzBs0q69ezQoM8="} alt="" />
+                    {/* <AvatarFallback className="bg-purple-900 text-purple-200">UA</AvatarFallback> */}
+                  </Avatar>
+                  <span className="font-medium">{session.data?.user?.name}</span>
+                  <Button onClick={()=>(signOut())} variant="outline" className="border-zinc-700 text-zinc-300 hover:bg-zinc-800 hover:text-white">
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Logout
                   </Button>
-                </Link>
-                <Link href={"/signup"}>
-                  <Button className="bg-purple-600 hover:bg-purple-700 text-white">Sign Up Free</Button>
-                </Link>
-              </div>
-            }
+                </div>
+              :
+                <div className="flex items-center gap-4">
+                  <Link href={"/login"}>
+                    <Button variant="outline" className="border-zinc-700 text-zinc-300 hover:bg-zinc-800 hover:text-white">
+                      Log In
+                    </Button>
+                  </Link>
+                  <Link href={"/signup"}>
+                    <Button className="bg-purple-600 hover:bg-purple-700 text-white">Sign Up Free</Button>
+                  </Link>
+                </div>
+              }
+            </SkeletonWrapper>
           </div>
         </div>
       </header>

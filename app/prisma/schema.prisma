@@ -36,11 +36,22 @@ model Message{
 model Task{
   id             String    @id @default(cuid())
   title          String
-  startTime      String
-  duration       String     
+  startTime      DateTime
+  duration       Int     
   priority       Priority
   userId         String
   user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  subTasks       SubTask[]
+}
+
+model SubTask{
+  id             String    @id @default(cuid())
+  taskId         String
+  task           Task      @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  description    String
+  isCompleted    Boolean   @default(false)
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 }

@@ -1,7 +1,7 @@
 "use server"
 import { authOptions } from "@/app/api/auth/[...nextauth]/options"
 import { getServerSession } from "next-auth"
-import { db } from "./db"
+import { db } from "../lib/db"
 
 
 

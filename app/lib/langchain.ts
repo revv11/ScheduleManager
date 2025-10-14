@@ -189,6 +189,7 @@ export async function AIResponse(q: string, userId: string){
           
           Context from previous interactions:
           lastsuggestion: {lastSuggestion}
+          if this is empty hence there is not schedule made yet.
           
           Additional Constraints:
           - Ensure total task duration is reasonable
@@ -262,7 +263,7 @@ export async function AIResponse(q: string, userId: string){
         currentTime: dateTimeInfo.timeOnly,
         humanReadableTime: dateTimeInfo.humanReadable
     });
-    
+    console.log(res.content)
     const resstring = res.content.toString();
 
     const finalres = extractJsonFromCodeBlock(resstring);

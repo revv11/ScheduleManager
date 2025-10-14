@@ -127,7 +127,11 @@ export default function Signup() {
           </div>
         </div>
 
-        <Button onClick={handleGoogle} variant="outline" className="w-full cursor-pointer">
+        <Button
+          onClick={handleGoogle}
+          variant="outline"
+          className="w-full cursor-pointer"
+        >
           <Image
             src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQjzC2JyZDZ_RaWf0qp11K0lcvB6b6kYNMoqtZAQ9hiPZ4cTIOB"
             alt="Google"

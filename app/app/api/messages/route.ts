@@ -6,26 +6,32 @@ import { getServerSession } from "next-auth";
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    
+
     if (!session?.user?.id) {
-      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json(
+        { success: false, error: "Unauthorized" },
+        { status: 401 },
+      );
     }
 
     const messages = await db.message.findMany({
       where: {
-        userId: session.user.id
+        userId: session.user.id,
       },
       orderBy: {
-        createdAt: "asc"
-      }
+        createdAt: "asc",
+      },
     });
 
     return NextResponse.json({ success: true, messages });
   } catch (error: any) {
     console.error("Error fetching messages:", error);
-    return NextResponse.json({ 
-      success: false, 
-      error: error.message || "Failed to fetch messages" 
-    }, { status: 500 });
+    return NextResponse.json(
+      {
+        success: false,
+        error: error.message || "Failed to fetch messages",
+      },
+      { status: 500 },
+    );
   }
 }

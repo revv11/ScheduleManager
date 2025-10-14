@@ -8,9 +8,12 @@ export default function RootLayout({
 }>) {
   return (
     <div className={``}>
-      <Appbar />
+
       <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
-        <div className="h-full-full">{children}</div>
+        <div className="h-full-full">
+          <Appbar />
+          {children}
+        </div>
       </ThemeProvider>
     </div>
   );

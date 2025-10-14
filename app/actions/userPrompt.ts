@@ -1,9 +1,9 @@
 "use server"
 
 import { db } from "@/lib/db"
-import { AIResponse } from "@/lib/langchain"
 import { getServerSession } from "next-auth"
 import { authOptions } from "@/app/api/auth/[...nextauth]/options"
+import { AIScheduleGenerator } from "@/lib/langgraph";
 
 
 
@@ -33,54 +33,54 @@ export default async function userPrompt(msg: string){
     const userId = session.user.id
     try{
 
-        const [res1, res2]  = await Promise.all([
-            AIResponse(msg, userId),
-
-            
-            NewMessage(msg, userId)
-        ])
+        // Store user message first
+        const userMessage = await NewMessage(msg, userId);
         
-        if(res1.output?.updated===true){
-            
-            try {
-                // Delete existing tasks first
-                const deleteResult = await db.task.deleteMany({
-                    where:{
-                        userId:session.user.id,
-                    }
-                })
-                // Then create new tasks
-                const tasksToCreate = res1.output.tasks.map((task: any) => {
-                    return {
-                        title: task.name,
-                        startTime: String(task.startTime),
-                        duration: String(task.duration),
-                        priority: task.priority.toUpperCase() as 'HIGH' | 'MEDIUM' | 'LOW', // Ensure proper typing
-                        userId: session.user.id,
-                    };
-                });
-                
-                const createResult = await db.task.createMany({
-                    data: tasksToCreate
-                });
-            } catch (taskError) {
-                console.error("Error in task operations:", taskError);
-                throw taskError; // Re-throw to be caught by outer catch
-            }
-        }
+        // Process with enhanced LangGraph agent
+        const aiResponse = await AIScheduleGenerator(msg, userId);
+        
+        console.log("AI Response:", {
+            description: aiResponse.description?.substring(0, 100),
+            tasksCount: aiResponse.tasks?.length || 0,
+            subTasksCount: aiResponse.subTasks?.length || 0
+        });
 
+        // The new tool-based LangGraph agent handles all database operations automatically
+        // Tasks and SubTasks are created, updated, or deleted using the appropriate tools
+        // Messages are also saved automatically within the LangGraph workflow
 
+        // Save AI response to messages (the LangGraph already saves internally, but we need it for the frontend)
         const finalres = await db.message.create({
             data:{
                 userId,
-                content:res1.output?.description,
-                role: "AI",
-                updated: res1.output?.updated
+                content: aiResponse.description || "I processed your request successfully.",
+                role: "AI"
             }
         })
 
+        // Fetch the most up-to-date tasks and subtasks from database after LangGraph processing
+        const updatedTasks = await db.task.findMany({
+            where: { userId },
+            orderBy: { startTime: 'asc' }
+        });
 
-        return {success: true, message: finalres}
+        const updatedSubTasks = await db.subTask.findMany({
+            where: { task: { userId } },
+            include: { task: { select: { id: true, title: true } } },
+            orderBy: { id: 'asc' }
+        });
+
+        return {
+            success: true, 
+            message: finalres,
+            aiResponse: {
+                description: aiResponse.description,
+                tasksGenerated: aiResponse.tasks?.length || 0,
+                subTasksGenerated: aiResponse.subTasks?.length || 0,
+                tasksInSchedule: updatedTasks,
+                subTasksInSchedule: updatedSubTasks
+            }
+        }
 
        
 
@@ -96,9 +96,8 @@ export default async function userPrompt(msg: string){
         const finalres = await db.message.create({
             data:{
                 userId,
-                content:`Oops! An error occurred: ${e instanceof Error ? e.message : 'Unknown error'}`,
-                role: "AI",
-                updated: false
+                content:`Oops! An error occurred`,
+                role: "AI"
             }
         })
         return {error: e, message: finalres}

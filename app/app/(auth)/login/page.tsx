@@ -35,11 +35,11 @@ export default function Login() {
         redirect: false,
       });
 
-      if(res?.error){
+      if (res?.error) {
         toast.error("Invalid credentials");
-      }else{
-      toast.success("Success!");
-      router.push("/dashboard");
+      } else {
+        toast.success("Success!");
+        router.push("/dashboard");
       }
     } catch (e: any) {
       toast.error(e.response.data.error);

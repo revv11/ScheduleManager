@@ -15,22 +15,16 @@ import { FormEvent, useEffect, useRef, useState, useTransition } from "react";
 // import ChatMessage from "./ChatMessage";
 import { Role } from "@prisma/client";
 import useSchedule from "@/zustand/useSchedule";
-import { refresh } from "@/lib/refresh"
+import { refresh } from "@/test/refresh"
 import { useSession } from "next-auth/react"
 
 
-export type Message = {
-  id? : string;
-  role: Role;
-  content: string,
-  createdAt?: Date;
-}
 
 
 
 function Prompt() {
     const session = useSession()
-    const {setTasks,messages,setMessages,loading,setLoading,msgError} = useSchedule()
+    const {setTasks, setSubTasks, messages, setMessages, loading, setLoading, msgError, updateFromLangGraphResponse} = useSchedule()
     const [input, setInput] = useState("");
     const [isPending, startTransition] = useTransition() 
     const bottomOfChatRef = useRef<HTMLDivElement>(null);
@@ -60,7 +54,7 @@ function Prompt() {
         try{
             startTransition(async ()=>{
                 setLoading(true)
-                const res = await userPrompt(input)
+                const res = await userPrompt(q)
                 setLoading(false)
                 console.log(res)
                 
@@ -68,25 +62,32 @@ function Prompt() {
                   setMessages([
                       ...messages.slice(0, -1),
                       {
-                        
                         role: Role.AI,
-                        content:  res.message.content 
+                        content: res.message.content 
                       }
                     ]);
-    
                 }
                 else{
-                    if(res.message.updated=== true){
-                      //call a function to update tasks
-                      const newtasks  = await refresh()
-                      setTasks(newtasks.newSchedule)
-                   
+                    // With the new LangGraph agent, update state from fresh database data
+                    if (res.aiResponse) {
+                      // Use the helper function to update both tasks and subtasks
+                      updateFromLangGraphResponse(res.aiResponse);
+                      
+                      // Log the AI response details for debugging
+                      console.log('AI Response Summary:', {
+                        tasksGenerated: res.aiResponse.tasksGenerated,
+                        subTasksGenerated: res.aiResponse.subTasksGenerated,
+                        totalTasksNow: res.aiResponse.tasksInSchedule?.length || 0,
+                        totalSubTasksNow: res.aiResponse.subTasksInSchedule?.length || 0
+                      });
                     }
+                    
+                    // Update messages with AI response
                     setMessages([
                         ...messages.slice(0, -1),
                         {
                           role: Role.AI,
-                          content:  res.message.content
+                          content: res.message.content
                         }
                       ]);
                 }

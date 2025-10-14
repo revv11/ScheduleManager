@@ -16,8 +16,8 @@ export async function GET() {
         userId: session.user.id,
       },
       orderBy: {
-        startTime: "asc"
-      }
+        startTime: "asc",
+      },
     });
     console.log("API /tasks - Found tasks:", res);
 

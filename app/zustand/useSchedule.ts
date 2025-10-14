@@ -1,4 +1,4 @@
-import { Message } from '@/components/custom/Prompt';
+
 import {create } from 'zustand'
 import axios from 'axios';
 
@@ -22,6 +22,19 @@ interface ConversationState{
     setTaskError: (taskError: string | null) =>void;
     msgError: string | null;
     setMsgError: (msgError: string | null) =>void;
+    subTasks: SubTaskType[];
+    setSubTasks: (subtasks: SubTaskType[]) => void;
+    fetchSubTasks: () => void;
+    subTaskLoading: boolean;
+    setSubTaskLoading: (loading: boolean) => void;
+    subTaskError: string | null;
+    setSubTaskError: (error: string | null) => void;
+    // --- SUBTASK FUNCTIONS ---
+    addSubTask: (text: string, taskId: string) => void;
+    updateSubTask: (id: string, isCompleted: boolean) => void;
+    removeSubTask: (id: string) => void;
+    // --- LANGGRAPH INTEGRATION ---
+    updateFromLangGraphResponse: (aiResponse: any) => void;
 }
 
 
@@ -75,6 +88,69 @@ const useSchedule = create<ConversationState>((set)=>({
         catch(e:any){
             set({msgError: e.message as string})
             set({msgLoading: false})
+        }
+    },
+
+    subTasks: [],
+    setSubTasks: (subTasks) => set({ subTasks: subTasks }),
+    subTaskLoading: false,
+    setSubTaskLoading: (subTaskLoading) => set({ subTaskLoading }),
+    subTaskError: null,
+    setSubTaskError: (subTaskError) => set({ subTaskError }),
+
+    fetchSubTasks: async () => {
+        set({ subTaskLoading: true });
+        try {
+            const res = await axios.get('/api/subtasks');
+            if (res.data.success) {
+                set({ subTasks: res.data.subTasks as SubTaskType[] });
+                set({ subTaskLoading: false });
+            } else {
+                set({ subTaskError: res.data.error as string });
+                set({ subTaskLoading: false });
+            }
+        } catch (e: any) {
+            set({ subTaskError: e.message as string });
+            set({ subTaskLoading: false });
+        }
+    },
+
+    // --- CLIENT-SIDE ONLY SUBTASK LOGIC ---
+
+    addSubTask: (text, taskId) => {
+        const newSubTask: SubTaskType = {
+        id: crypto.randomUUID(), // Generate a unique ID on the front end
+        description: text, // Changed from 'text' to 'description' to match database schema
+        taskId,
+        isCompleted: false,
+        };
+        set((state) => ({
+        subTasks: [...state.subTasks, newSubTask],
+        }));
+    },
+
+    updateSubTask: (id, isCompleted) => {
+        set((state) => ({
+        subTasks: state.subTasks.map((st) =>
+            st.id === id ? { ...st, isCompleted } : st
+        ),
+        }));
+    },
+
+    removeSubTask: (id) => {
+        set((state) => ({
+        subTasks: state.subTasks.filter((st) => st.id !== id),
+        }));
+    },
+
+    // --- LANGGRAPH INTEGRATION HELPER ---
+    updateFromLangGraphResponse: (aiResponse: any) => {
+        if (aiResponse?.tasksInSchedule) {
+            set({ tasks: aiResponse.tasksInSchedule.sort((a: TaskType, b: TaskType) => 
+                new Date(a.startTime).getTime() - new Date(b.startTime).getTime()) });
+        }
+        if (aiResponse?.subTasksInSchedule) {
+            set({ subTasks: aiResponse.subTasksInSchedule });
         }
     },
 }))

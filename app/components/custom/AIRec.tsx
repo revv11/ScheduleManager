@@ -1,92 +1,62 @@
-"use client"
-import React, { useEffect } from 'react'
-import useSchedule from '@/zustand/useSchedule'
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { Badge } from "@/components/ui/badge"
-import { Clock } from "lucide-react"
-import axios from 'axios'
-import dayjs from 'dayjs'
-import { toast } from "react-hot-toast"
+"use client";
+import { useRef, useEffect } from "react";
+import useSchedule from "@/zustand/useSchedule";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { ListPlus } from "lucide-react";
+import AICard from "./AICard"; // Adjust the path if necessary
 
-function PriorityBadge({ priority }:any) {
-  const colors:any = {
-    HIGH: "bg-red-900/30 text-red-400 border-red-800",
-    MEDIUM: "bg-amber-900/30 text-amber-400 border-amber-800",
-    LOW: "bg-green-900/30 text-green-400 border-green-800",
+function AIRec() {
+  const { tasks, setTasks } = useSchedule();
+  const bottomRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [tasks]);
+
+  if (tasks.length === 0) {
+    return (
+      <Card className="flex h-full flex-col border-zinc-800 bg-zinc-950">
+        <CardHeader className="border-b border-zinc-800 pb-3">
+          <CardTitle className="text-lg font-semibold text-white">
+            AI Recommendations
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-1 flex-col items-center justify-center gap-4 text-center">
+          <ListPlus className="h-12 w-12 text-zinc-600" />
+          <div className="space-y-1">
+            <h3 className="font-semibold text-white">No tasks yet!</h3>
+            <p className="text-sm text-zinc-400">
+              Chat with the AI assistant to build your schedule.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    );
   }
 
   return (
-    <Badge variant="outline" className={`${colors[priority]} border`}>
-      {priority} priority
-    </Badge>
-  )
+    <Card className="flex h-full flex-col border-zinc-800 bg-zinc-950">
+      <CardHeader className="border-b border-zinc-800 pb-3">
+        <CardTitle className="text-lg font-semibold text-white">
+          AI Recommendations
+        </CardTitle>
+      </CardHeader>
+
+      {/* 1. Removed 'overflow-y-auto' and added 'overflow-hidden' as a safeguard */}
+      <CardContent className="flex-1 p-0 overflow-hidden">
+        {/* 2. Removed hardcoded height and used h-full to fill the parent CardContent */}
+        <ScrollArea className="h-[calc(100vh-200px)] w-full p-4 ">
+          <div className="space-y-3">
+            {tasks.map((task) => (
+              <AICard key={task.id} task={task} />
+            ))}
+            <div ref={bottomRef} />
+          </div>
+        </ScrollArea>
+      </CardContent>
+    </Card>
+  );
 }
 
-
-function AIRec() {
-    const {tasks, setTasks} = useSchedule()
-    
-    useEffect(()=>{
-        async function run(){
-          try{
-            
-            const res= await axios.get('/api/tasks')
-            const response = res.data.tasks as TaskType[]
-            setTasks(response)
-        
-
-          }
-          catch(e){
-            console.log("Error fetching tasks:", e);
-            toast.error("Error fetching tasks");
-          }
-        }
-        run()
-    },[setTasks])
-
-    if(tasks.length===0){
-      return(
-        <Card className='bg-zinc-950 border-zinc-800 md:col-span-1 h-[calc(100vh-150px)]' >
-          <CardHeader className="border-b border-zinc-800 pb-3">
-            <CardTitle className="text-lg font-semibold text-white">AI Recommendations</CardTitle>
-          </CardHeader>
-          <h1 className='flex items-center  justify-center h-full'>
-              Start building a schedule!
-          </h1>
-        </Card>
-      )
-    }
-
-
-
-    return (
-        
-        <Card className="bg-zinc-950 border-zinc-800 md:col-span-1 h-[calc(100vh-130px)]">
-          <CardHeader className="border-b border-zinc-800 pb-3">
-            <CardTitle className="text-lg font-semibold text-white">AI Recommendations</CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
-            <ScrollArea className="h-[calc(100vh-220px)]">
-              {tasks.map((item, index) => (
-                <div key={index} className="p-4 border-b border-zinc-800/50 hover:bg-zinc-900/50 transition-colors">
-                  <div className="flex justify-between items-start mb-2">
-                    <h3 className="font-medium text-white">{item.title}</h3>
-                    <div className="flex items-center text-zinc-400">
-                      <Clock className="h-4 w-4 mr-1" />
-                      <span className="text-sm">{item.duration} minutes</span>
-                    </div>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <div className="text-sm text-zinc-400">Start Time: {dayjs(item.startTime).format('hh:mm A')}</div>
-                    <PriorityBadge priority={item.priority} />
-                  </div>
-                </div>
-              ))}
-            </ScrollArea>
-          </CardContent>
-        </Card>
-    )
-}
-
-export default AIRec
+export default AIRec;

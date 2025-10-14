@@ -24,7 +24,9 @@ export default function RootLayout({
             {isSignup ? "Create account" : "Welcome back"}
           </h1>
           <p className="mt-4 text-lg text-gray-300">
-            {isSignup ? "Join us and start your journey today" : "Sign in to continue"}
+            {isSignup
+              ? "Join us and start your journey today"
+              : "Sign in to continue"}
           </p>
         </div>
       </div>

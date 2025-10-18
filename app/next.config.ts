@@ -4,6 +4,16 @@ const nextConfig: NextConfig = {
   reactStrictMode: false,
   output: 'standalone',
   outputFileTracingRoot: __dirname,
+  
+  // Exclude test files from build
+  webpack: (config: any) => {
+    config.watchOptions = {
+      ...config.watchOptions,
+      ignored: ['**/test/**/*', '**/node_modules/**']
+    };
+    return config;
+  },
+  
   images: {
       remotePatterns: [
         {

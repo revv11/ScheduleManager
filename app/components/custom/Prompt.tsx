@@ -15,7 +15,7 @@ import { FormEvent, useEffect, useRef, useState, useTransition } from "react";
 // import ChatMessage from "./ChatMessage";
 import { Role } from "@prisma/client";
 import useSchedule from "@/zustand/useSchedule";
-import { refresh } from "@/test/refresh"
+import { refresh } from "@/lib/refresh"
 import { useSession } from "next-auth/react"
 
 

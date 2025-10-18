@@ -58,18 +58,8 @@ export default async function userPrompt(msg: string){
             }
         })
 
-        // Fetch the most up-to-date tasks and subtasks from database after LangGraph processing
-        const updatedTasks = await db.task.findMany({
-            where: { userId },
-            orderBy: { startTime: 'asc' }
-        });
-
-        const updatedSubTasks = await db.subTask.findMany({
-            where: { task: { userId } },
-            include: { task: { select: { id: true, title: true } } },
-            orderBy: { id: 'asc' }
-        });
-
+        // Use the tasks and subtasks already fetched by LangGraph agent
+        // No need to query database again since LangGraph already returns fresh data
         return {
             success: true, 
             message: finalres,
@@ -77,8 +67,8 @@ export default async function userPrompt(msg: string){
                 description: aiResponse.description,
                 tasksGenerated: aiResponse.tasks?.length || 0,
                 subTasksGenerated: aiResponse.subTasks?.length || 0,
-                tasksInSchedule: updatedTasks,
-                subTasksInSchedule: updatedSubTasks
+                tasksInSchedule: aiResponse.tasks || [],
+                subTasksInSchedule: aiResponse.subTasks || []
             }
         }
 

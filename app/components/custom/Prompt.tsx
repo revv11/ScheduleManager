@@ -37,19 +37,22 @@ function Prompt() {
 
         const q = input;
         setInput("")
-        setMessages([
-        ...messages,
-        {
+        
+        // Add user message and temporary AI "thinking" message
+        const userMessage = {
             role: Role.USER,
             content: q,
             createdAt: new Date(),
-        },
-        {
+        };
+        
+        const thinkingMessage = {
             role: Role.AI,
             content: "Thinking...",
             createdAt: new Date()
-        }
-        ])
+        };
+        
+        // Use functional update pattern
+        setMessages((prev) => [...prev, userMessage, thinkingMessage]);
 
         try{
             startTransition(async ()=>{
@@ -59,11 +62,13 @@ function Prompt() {
                 console.log(res)
                 
                 if(res.error){
-                  setMessages([
-                      ...messages.slice(0, -1),
+                  // Replace the "Thinking..." message with error message
+                  setMessages((prev) => [
+                      ...prev.slice(0, -1), // Remove the "Thinking..." message
                       {
                         role: Role.AI,
-                        content: res.message.content 
+                        content: res.message.content,
+                        createdAt: new Date()
                       }
                     ]);
                 }
@@ -82,12 +87,13 @@ function Prompt() {
                       });
                     }
                     
-                    // Update messages with AI response
-                    setMessages([
-                        ...messages.slice(0, -1),
+                    // Replace the "Thinking..." message with actual AI response
+                    setMessages((prev) => [
+                        ...prev.slice(0, -1), // Remove the "Thinking..." message
                         {
                           role: Role.AI,
-                          content: res.message.content
+                          content: res.message.content,
+                          createdAt: new Date()
                         }
                       ]);
                 }
@@ -96,6 +102,15 @@ function Prompt() {
         }
         catch(e){
             console.log(e)
+            // Replace "Thinking..." with error message on exception
+            setMessages((prev) => [
+                ...prev.slice(0, -1),
+                {
+                  role: Role.AI,
+                  content: "Sorry, something went wrong. Please try again.",
+                  createdAt: new Date()
+                }
+              ]);
         }
     
 
@@ -135,7 +150,7 @@ function Prompt() {
                 <h2 className="text-lg font-semibold text-white">Welcome to Your AI Schedule Assistant</h2>
                 <ul className="list-disc list-inside space-y-2">
                   <li><strong>Create Your Schedule</strong> – Start by adding tasks with a title, duration, and start time.</li>
-                  <li><strong>Use AI Recommendations</strong> – Click "AI Recommendations" to get a smart schedule based on your goals.</li>
+                  <li><strong>Use AI Recommendations</strong> – Click &quot;AI Recommendations&quot; to get a smart schedule based on your goals.</li>
                   <li><strong>Chat with the Assistant</strong> – Try asking: <br /><code>&quot;Suggest a study plan for today.&quot;</code> or <code>&quot;Add a 30-minute walk.&quot;</code></li>
                   <li><strong>Track Your Progress</strong> – The Current Task panel updates in real time!</li>
                 </ul>

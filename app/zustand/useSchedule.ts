@@ -7,7 +7,7 @@ import axios from 'axios';
 
 interface ConversationState{
     messages: Message[];
-    setMessages: (messages: Message[]) =>void;
+    setMessages: (messages: Message[] | ((prev: Message[]) => Message[])) =>void;
     tasks: TaskType[];
     setTasks: (messages: TaskType[]) =>void;
     loading: boolean;
@@ -49,7 +49,9 @@ const useSchedule = create<ConversationState>((set)=>({
     setTaskLoading: (taskLoading)=>set({taskLoading: taskLoading}),
     tasks : [],
     messages: [],
-    setMessages: (messages)=>set({messages: messages}),
+    setMessages: (messages) => set((state) => ({
+        messages: typeof messages === 'function' ? messages(state.messages) : messages
+    })),
     setTasks: (tasks)=>set({tasks: tasks.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime())}),
     loading: false,
     setLoading: (loading)=>set({loading: loading}),

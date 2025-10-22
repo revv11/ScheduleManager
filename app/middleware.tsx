@@ -1,16 +1,16 @@
 
 import { NextResponse, NextRequest } from "next/server";
-
 import { getToken } from "next-auth/jwt";
 
-
-
-
-export async function middleware(req: NextRequest,) {
+export async function middleware(req: NextRequest) {
   // Access cookies from the request
   const secret = process.env.NEXTAUTH_SECRET;
  
-  const token = await getToken({ req, secret });
+  const token = await getToken({ 
+    req, 
+    secret,
+    secureCookie: process.env.NODE_ENV === "production"
+  });
 
     
   const url = req.nextUrl;
@@ -28,10 +28,10 @@ export async function middleware(req: NextRequest,) {
  
  
 }
-export const config={
-    matcher:[
-      "/dashboard",
-      "/login",
-      "/signup",
-    ]
+export const config = {
+  matcher: [
+    "/dashboard/:path*",
+    "/login",
+    "/signup"
+  ]
 }

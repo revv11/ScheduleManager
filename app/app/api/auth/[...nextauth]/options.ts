@@ -42,6 +42,14 @@ export const authOptions = {
     }),
   ],
   secret: process.env.NEXTAUTH_SECRET,
+  trustHost: true,
+  pages: {
+    signIn: "/login",
+    error: "/auth/error",
+  },
+  session: {
+    strategy: "jwt" as const,
+  },
   callbacks: {
     async signIn({ user, account }: any) {
       if (account?.provider == "credentials") {

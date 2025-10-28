@@ -7,14 +7,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <div className={``}>
-
-      <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
-        <div className="h-full-full">
+    <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
+      <div className="h-screen bg-zinc-900 text-zinc-100 flex flex-col overflow-hidden">
           <Appbar />
-          {children}
-        </div>
-      </ThemeProvider>
-    </div>
+          <div className="flex-1 min-h-0 overflow-hidden">
+            {children}
+          </div>
+      </div>
+    </ThemeProvider>
   );
 }

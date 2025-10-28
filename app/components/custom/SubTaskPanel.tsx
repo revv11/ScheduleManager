@@ -26,8 +26,8 @@ export default function SubTaskPanel() {
     return Object.values(groups);
   }, [tasks, subTasks]);
 
-  const toggleSubTask = (id: string, isCompleted: boolean) => {
-    updateSubTask(id, !isCompleted);
+  const toggleSubTask = async (id: string, isCompleted: boolean) => {
+    await updateSubTask(id, !isCompleted);
   };
 
   if (groupedSubTasks.length === 0) {

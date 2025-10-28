@@ -14,16 +14,53 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const messages = await db.message.findMany({
+    const { searchParams } = new URL(request.url);
+    const page = parseInt(searchParams.get('page') || '1', 10);
+    const limit = parseInt(searchParams.get('limit') || '10', 10);
+    const before = searchParams.get('before'); // For loading older messages
+
+    // Get total count for pagination info
+    const totalCount = await db.message.count({
       where: {
         userId: session.user.id,
       },
-      orderBy: {
-        createdAt: "asc",
-      },
     });
 
-    return NextResponse.json({ success: true, messages });
+    const whereClause: any = {
+      userId: session.user.id,
+    };
+
+    // If 'before' parameter is provided, get messages older than that timestamp
+    if (before) {
+      whereClause.createdAt = {
+        lt: new Date(before)
+      };
+    }
+
+    // Always get messages in descending order (newest first)
+    const messages = await db.message.findMany({
+      where: whereClause,
+      orderBy: {
+        createdAt: "desc",
+      },
+      take: limit,
+    });
+
+    // For initial load (page 1, no 'before'), we return newest messages
+    // For pagination (with 'before'), we return older messages
+    const hasMore = messages.length === limit;
+
+    return NextResponse.json({ 
+      success: true, 
+      messages: messages.reverse(), // Reverse to show chronological order in UI
+      pagination: {
+        currentPage: page,
+        totalCount,
+        hasMore,
+        limit,
+        oldestMessageDate: messages.length > 0 ? messages[0].createdAt : null
+      }
+    });
   } catch (error: any) {
     console.error("Error fetching messages:", error);
     return NextResponse.json(

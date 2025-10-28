@@ -43,7 +43,7 @@ export default function Appbar() {
                 <Button
                   onClick={() => signOut()}
                   variant="outline"
-                  className="border-zinc-700 text-zinc-300 hover:bg-zinc-800 hover:text-white"
+                  className="border-zinc-700 text-zinc-300 hover:bg-zinc-800 hover:text-white cursor-pointer"
                 >
                   <LogOut className="mr-2 h-4 w-4" />
                   Logout
@@ -54,13 +54,13 @@ export default function Appbar() {
                 <Link href={"/login"}>
                   <Button
                     variant="outline"
-                    className="border-zinc-700 text-zinc-300 hover:bg-zinc-800 hover:text-white"
+                    className="border-zinc-700 text-zinc-300 hover:bg-zinc-800 hover:text-white cursor-pointer"
                   >
                     Log In
                   </Button>
                 </Link>
                 <Link href={"/signup"}>
-                  <Button className="bg-purple-600 text-white hover:bg-purple-700">
+                  <Button className="bg-purple-600 text-white hover:bg-purple-700 cursor-pointer">
                     Sign Up Free
                   </Button>
                 </Link>

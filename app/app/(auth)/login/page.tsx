@@ -56,7 +56,8 @@ export default function Login() {
       </div>
 
       <form className="space-y-6" onSubmit={handleSubmit}>
-        <div className="space-y-2">
+        {/* Credentials Login - Coming in Future Version */}
+        {/* <div className="space-y-2">
           <Label htmlFor="signup-email">Email address</Label>
           <div className="relative">
             <Mail className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
@@ -107,7 +108,7 @@ export default function Login() {
               or continue with
             </span>
           </div>
-        </div>
+        </div> */}
 
         <Button
           variant="outline"
@@ -124,12 +125,12 @@ export default function Login() {
           Sign up with Google
         </Button>
 
-        <p className="text-center text-sm text-muted-foreground">
+        {/* <p className="text-center text-sm text-muted-foreground">
           Already have an account?{" "}
           <a href="/signin" className="text-[#6366F1] hover:underline">
             Sign in
           </a>
-        </p>
+        </p> */}
 
         <p className="text-center text-xs text-muted-foreground">
           By continuing, you agree to our{" "}

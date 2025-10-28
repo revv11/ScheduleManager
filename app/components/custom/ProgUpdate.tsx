@@ -4,9 +4,12 @@
 import axios from "axios"
 import useSchedule from "@/zustand/useSchedule"
 import dayjs from 'dayjs'
+import isSameOrAfter from 'dayjs/plugin/isSameOrAfter'
 import {
   Clock,
 } from "lucide-react"
+
+dayjs.extend(isSameOrAfter);
 import { useState, useEffect } from "react"
 import { toast } from "react-hot-toast"
 
@@ -58,9 +61,33 @@ function ProgUpdate() {
   const start = dayjs(task.startTime);
   const duration = Number(task.duration);
   const end = start.add(duration, 'minute');
-  const elapsed = Math.max(0, now.diff(start, "minute"));
-  const remaining = Math.max(0, end.diff(now, "minute"));
-  const percent = Math.min(100, (elapsed / duration) * 100);
+  
+  // Determine task status
+  const hasStarted = now.isSameOrAfter(start);
+  const hasEnded = now.isAfter(end);
+  const isActive = hasStarted && !hasEnded;
+  
+  // Calculate times based on status
+  let elapsed = 0;
+  let remaining = 0;
+  let percent = 0;
+  let timeUntilStart = 0;
+  
+  if (!hasStarted) {
+    // Task hasn't started yet
+    timeUntilStart = start.diff(now, "minute");
+    percent = 0;
+  } else if (isActive) {
+    // Task is currently active
+    elapsed = now.diff(start, "minute");
+    remaining = end.diff(now, "minute");
+    percent = Math.min(100, (elapsed / duration) * 100);
+  } else {
+    // Task has completed
+    elapsed = duration;
+    remaining = 0;
+    percent = 100;
+  }
 
   return (
     <div className="">
@@ -77,11 +104,32 @@ function ProgUpdate() {
         </div>
 
         <div className="w-full bg-zinc-800 rounded-full h-3 mb-2">
-          <div className="bg-purple-600 h-3 rounded-full" style={{ width: `${percent}%` }}></div>
+          <div 
+            className={`h-3 rounded-full transition-all duration-300 ${
+              !hasStarted ? 'bg-yellow-600' : 
+              hasEnded ? 'bg-green-600' : 
+              'bg-purple-600'
+            }`} 
+            style={{ width: `${percent}%` }}
+          ></div>
         </div>
         <div className="flex justify-between text-xs text-zinc-400">
-          <span>{elapsed} minutes elapsed</span>
-          <span>{remaining} minutes remaining</span>
+          {!hasStarted ? (
+            <>
+              <span>Not started</span>
+              <span>Starts in {timeUntilStart} minutes</span>
+            </>
+          ) : hasEnded ? (
+            <>
+              <span>Task completed</span>
+              <span>{duration} minutes total</span>
+            </>
+          ) : (
+            <>
+              <span>{elapsed} minutes elapsed</span>
+              <span>{remaining} minutes remaining</span>
+            </>
+          )}
         </div>
 
         <div className="flex gap-2 mt-4">

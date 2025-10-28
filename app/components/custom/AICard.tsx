@@ -1,12 +1,14 @@
 "use client";
 import { useState, useMemo } from "react";
-import { Clock, ChevronDown, Plus, X } from "lucide-react";
+import { Clock, ChevronDown, Plus, X, Edit, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import dayjs from "dayjs";
 import useSchedule from "@/zustand/useSchedule"; // Import your Zustand store
+import EditTaskForm from "./EditTaskForm";
+import DeleteTaskDialog from "./DeleteTaskDialog";
 
 // NOTE: These types should ideally live in a central `types.ts` file
 type Priority = "HIGH" | "MEDIUM" | "LOW";
@@ -30,9 +32,11 @@ export default function AICard({ task }: { task: TaskType }) {
   // Local state for UI interactions like expanding the card and handling input fields
   const [isExpanded, setIsExpanded] = useState(false);
   const [newSubtask, setNewSubtask] = useState("");
+  const [showEditForm, setShowEditForm] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   // Get the global subtask state and actions from your Zustand store
-  const { subTasks, addSubTask, updateSubTask, removeSubTask } = useSchedule();
+  const { subTasks, addSubTask, updateSubTask, removeSubTask, fetchTasks } = useSchedule();
 
   // Filter the global subtask array to get only the subtasks for this specific card.
   // `useMemo` is used for optimization, preventing this filter from running on every re-render.
@@ -55,76 +59,221 @@ export default function AICard({ task }: { task: TaskType }) {
   // --- Handler Functions ---
   // These functions call the actions from your Zustand store to modify the global state
 
-  const handleAddSubtask = () => {
+  const handleAddSubtask = async () => {
     if (newSubtask.trim() === "") return;
-    addSubTask(newSubtask.trim(), task.id);
+    await addSubTask(newSubtask.trim(), task.id);
     setNewSubtask(""); // Clear the input field after adding
   };
 
-  const toggleSubtask = (id: string, currentStatus: boolean) => {
-    updateSubTask(id, !currentStatus);
+  const toggleSubtask = async (id: string, currentStatus: boolean) => {
+    await updateSubTask(id, !currentStatus);
   };
 
-  const deleteSubtask = (id: string) => {
-    removeSubTask(id);
+  const deleteSubtask = async (id: string) => {
+    await removeSubTask(id);
+  };
+
+  const handleTaskUpdate = () => {
+    // Refresh tasks after update
+    fetchTasks();
+    setShowEditForm(false);
+  };
+
+  const handleTaskDelete = () => {
+    // Refresh tasks after delete
+    fetchTasks();
+    setShowDeleteDialog(false);
   };
 
   return (
-    <div className="rounded-lg border border-zinc-800 bg-zinc-900/50 p-4 transition-all hover:border-zinc-700">
-      {/* --- Main Card Header --- */}
-      <div className="flex cursor-pointer items-start justify-between" onClick={() => setIsExpanded(!isExpanded)}>
-        <div className="flex-1 space-y-1.5">
-          <h3 className="font-semibold text-white">{task.title}</h3>
-          <div className="flex items-center gap-4 text-sm text-zinc-400">
-            <div className="flex items-center">
-              <Clock className="mr-1.5 h-4 w-4" />
-              <span>{startTime.format("hh:mm A")} - {endTime.format("hh:mm A")}</span>
-            </div>
+    <div className="group rounded-xl border border-zinc-800 bg-gradient-to-br from-zinc-900/80 to-zinc-900/40 p-6 shadow-lg transition-all duration-200 hover:border-zinc-700 hover:shadow-xl hover:from-zinc-900/90 hover:to-zinc-900/60">
+      
+      {/* Task Title */}
+      <div className="mb-4">
+        <div className="flex items-start justify-between gap-3">
+          <h3 
+            className="text-xl font-bold text-white cursor-pointer hover:text-zinc-200 transition-colors leading-tight flex-1"
+            onClick={() => setIsExpanded(!isExpanded)}
+          >
+            {task.title}
+          </h3>
+          <div className="flex items-center gap-2 ml-4">
             <PriorityBadge priority={task.priority ?? "MEDIUM"} />
+            {/* Action buttons */}
+            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowEditForm(true);
+                }}
+                className="h-8 w-8 text-zinc-500 hover:text-blue-400 hover:bg-blue-900/20 transition-colors"
+                title="Edit task"
+              >
+                <Edit className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowDeleteDialog(true);
+                }}
+                className="h-8 w-8 text-zinc-500 hover:text-red-400 hover:bg-red-900/20 transition-colors"
+                title="Delete task"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
-        </div>
-        <div className="flex flex-col items-end">
-          <span className="text-sm font-medium text-zinc-300">{formatDuration(task.duration)}</span>
-          <ChevronDown className={`mt-2 h-5 w-5 text-zinc-500 transition-transform duration-300 ${isExpanded ? "rotate-180" : ""}`} />
         </div>
       </div>
 
+      {/* Time and Duration Info */}
+      <div className="mb-4 flex items-center justify-between">
+        <div className="flex items-center gap-2 text-zinc-300">
+          <div className="flex items-center justify-center w-8 h-8 bg-zinc-800 rounded-lg">
+            <Clock className="h-4 w-4 text-zinc-400" />
+          </div>
+          <div>
+            <div className="text-sm font-medium">
+              {startTime.format("h:mm A")} - {endTime.format("h:mm A")}
+            </div>
+            <div className="text-xs text-zinc-500">
+              {startTime.format("MMM D, YYYY")}
+            </div>
+          </div>
+        </div>
+        
+        <div className="flex items-center gap-3">
+          <div className="text-right">
+            <div className="text-sm font-semibold text-zinc-200">
+              {formatDuration(task.duration)}
+            </div>
+            <div className="text-xs text-zinc-500">
+              Duration
+            </div>
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="h-10 w-10 text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors rounded-lg"
+            title={isExpanded ? "Collapse subtasks" : "Show subtasks"}
+          >
+            <ChevronDown 
+              className={`h-5 w-5 transition-transform duration-300 ${isExpanded ? "rotate-180" : ""}`}
+            />
+          </Button>
+        </div>
+      </div>
+
+      {/* Edit Task Form Modal */}
+      <EditTaskForm
+        isOpen={showEditForm}
+        onClose={() => setShowEditForm(false)}
+        onSuccess={handleTaskUpdate}
+        task={task}
+      />
+
+      {/* Delete Task Dialog Modal */}
+      <DeleteTaskDialog
+        isOpen={showDeleteDialog}
+        onClose={() => setShowDeleteDialog(false)}
+        onSuccess={handleTaskDelete}
+        task={task}
+      />
+
       {/* --- Expandable Subtask Section --- */}
-      <div className={`overflow-hidden pt-2 transition-all duration-300 ease-in-out ${isExpanded ? "max-h-[500px] opacity-100" : "max-h-0 opacity-0"}`}>
-        <div className="mt-4 border-t border-zinc-800 pt-4">
-          <h4 className="mb-2 text-sm font-medium text-zinc-400">Sub-tasks</h4>
+      <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isExpanded ? "max-h-[700px] opacity-100 pb-2" : "max-h-0 opacity-0"}`}>
+        <div className="mt-6 pt-6 border-t border-zinc-700/30">
+          {/* Subtask Header */}
+          <div className="mb-5 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <h4 className="text-base font-semibold text-zinc-200">Subtasks</h4>
+              {relevantSubtasks.length > 0 && (
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                  <span className="text-sm text-zinc-400">
+                    {relevantSubtasks.filter(st => st.isCompleted).length} of {relevantSubtasks.length} completed
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+          
+          {/* Subtask List */}
           <div className="space-y-2">
-            {/* Map over the filtered subtasks to display them */}
-            {relevantSubtasks.map((subtask) => (
-              <div key={subtask.id} className="group flex items-center gap-3">
-                <Checkbox
-                  id={`subtask-${subtask.id}`}
-                  checked={subtask.isCompleted}
-                  onCheckedChange={() => toggleSubtask(subtask.id!, subtask.isCompleted)}
-                />
-                <label htmlFor={`subtask-${subtask.id}`} className={`flex-1 text-sm ${subtask.isCompleted ? "text-zinc-500 line-through" : "text-zinc-300"}`}>
-                  {subtask.description}
-                </label>
-                <Button variant="ghost" size="icon" onClick={() => deleteSubtask(subtask.id!)} className="h-6 w-6 opacity-0 transition-opacity group-hover:opacity-100">
-                  <X className="h-4 w-4 text-zinc-500" />
-                </Button>
+            {relevantSubtasks.length === 0 ? (
+              <div className="text-center py-8 text-zinc-500">
+                <div className="w-12 h-12 bg-zinc-800 rounded-xl flex items-center justify-center mx-auto mb-3">
+                  <Plus className="h-6 w-6 text-zinc-600" />
+                </div>
+                <p className="text-sm">No subtasks yet</p>
+                <p className="text-xs text-zinc-600">Add one below to get started!</p>
               </div>
-            ))}
+            ) : (
+              relevantSubtasks.map((subtask, index) => (
+                <div 
+                  key={subtask.id} 
+                  className="group flex items-center gap-4 p-4 rounded-lg bg-zinc-800/30 border border-zinc-700/50 hover:bg-zinc-800/50 hover:border-zinc-600/50 transition-all duration-200"
+                >
+                  <div className="flex items-center gap-3 flex-1">
+                    <Checkbox
+                      id={`subtask-${subtask.id}`}
+                      checked={subtask.isCompleted}
+                      onCheckedChange={() => toggleSubtask(subtask.id!, subtask.isCompleted)}
+                      className="w-5 h-5"
+                    />
+                    <div className="flex-1">
+                      <label 
+                        htmlFor={`subtask-${subtask.id}`} 
+                        className={`block text-sm cursor-pointer transition-colors ${
+                          subtask.isCompleted 
+                            ? "text-zinc-500 line-through" 
+                            : "text-zinc-200 hover:text-white"
+                        }`}
+                      >
+                        {subtask.description}
+                      </label>
+                    </div>
+                  </div>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    onClick={() => deleteSubtask(subtask.id!)} 
+                    className="h-8 w-8 opacity-0 group-hover:opacity-100 text-zinc-500 hover:text-red-400 hover:bg-red-900/20 transition-all duration-200"
+                    title="Delete subtask"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))
+            )}
           </div>
 
-          {/* Input field and button for adding new subtasks */}
-          <div className="mt-4 flex gap-2">
-            <Input
-              type="text"
-              value={newSubtask}
-              onChange={(e) => setNewSubtask(e.target.value)}
-              placeholder="Add a new sub-task..."
-              className="h-9 bg-zinc-800"
-              onKeyDown={(e) => e.key === 'Enter' && handleAddSubtask()}
-            />
-            <Button size="sm" onClick={handleAddSubtask} className="bg-purple-600 hover:bg-purple-700">
-              <Plus className="mr-1 h-4 w-4" /> Add
-            </Button>
+          {/* Add New Subtask */}
+          <div className="mt-6">
+            <div className="flex gap-3">
+              <Input
+                type="text"
+                value={newSubtask}
+                onChange={(e) => setNewSubtask(e.target.value)}
+                placeholder="Add a new subtask..."
+                className="flex-1 h-11 bg-zinc-800/50 border-zinc-700/50 focus:border-purple-500/50 focus:bg-zinc-800/70 transition-all duration-200 text-zinc-200 placeholder:text-zinc-500"
+                onKeyDown={(e) => e.key === 'Enter' && handleAddSubtask()}
+              />
+              <Button 
+                size="default" 
+                onClick={handleAddSubtask} 
+                className="h-11 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 px-5 font-medium transition-all duration-200 shadow-lg hover:shadow-purple-500/25"
+                disabled={!newSubtask.trim()}
+              >
+                <Plus className="mr-2 h-4 w-4" /> 
+                Add Task
+              </Button>
+            </div>
           </div>
         </div>
       </div>

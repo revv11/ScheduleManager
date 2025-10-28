@@ -40,7 +40,7 @@ export default function LandingPage() {
                 <Link href={"/dashboard"}>
                   <Button
                     size="lg"
-                    className="bg-purple-600 hover:bg-purple-700 text-white"
+                    className="bg-purple-600 hover:bg-purple-700 text-white cursor-pointer"
                   >
                     Get Started
                   </Button>
@@ -174,7 +174,7 @@ export default function LandingPage() {
             <Link href={"/dashboard"}>
               <Button
                 size="lg"
-                className="bg-purple-600 hover:bg-purple-700 text-white"
+                className="bg-purple-600 hover:bg-purple-700 text-white cursor-pointer"
               >
                 Get Started
               </Button>

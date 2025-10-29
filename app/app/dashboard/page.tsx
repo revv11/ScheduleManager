@@ -64,6 +64,10 @@ export default function Home() {
           <SkeletonWrapper
             loading={globalLoading}
             error={taskError}
+            onRetry={() => {
+              fetchTasks();
+              fetchSubTasks();
+            }}
             className="h-full min-h-0"
             skeleton={
               <div className="flex h-full flex-col rounded-lg border border-zinc-800 bg-zinc-950">
@@ -86,6 +90,7 @@ export default function Home() {
           <SkeletonWrapper
             loading={taskLoading}
             error={taskError}
+            onRetry={fetchTasks}
             className="h-full min-h-0"
             skeleton={
               <div className="flex h-full flex-col rounded-lg border border-zinc-800 bg-zinc-950">
@@ -109,6 +114,7 @@ export default function Home() {
           <SkeletonWrapper
             loading={msgLoading}
             error={msgError}
+            onRetry={() => fetchMessages(false)}
             className="h-full min-h-0"
             skeleton={
               <div className="flex h-full flex-col rounded-lg border border-zinc-800 bg-zinc-950">
@@ -142,6 +148,10 @@ export default function Home() {
         <SkeletonWrapper
           loading={globalLoading}
           error={taskError}
+          onRetry={() => {
+            fetchTasks();
+            fetchSubTasks();
+          }}
           className="h-full min-h-0"
             skeleton={
               <div className="flex h-full flex-col rounded-lg border border-zinc-800 bg-zinc-950">
@@ -164,6 +174,7 @@ export default function Home() {
         <SkeletonWrapper
           loading={taskLoading}
           error={taskError}
+          onRetry={fetchTasks}
           className="h-full min-h-0"
             skeleton={
               <div className="flex h-full flex-col rounded-lg border border-zinc-800 bg-zinc-950">
@@ -190,6 +201,7 @@ export default function Home() {
         <SkeletonWrapper
           loading={msgLoading}
           error={msgError}
+          onRetry={() => fetchMessages(false)}
           className="h-full min-h-0"
             skeleton={
               <div className="flex h-full flex-col rounded-lg border border-zinc-800 bg-zinc-950">

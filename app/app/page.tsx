@@ -53,9 +53,11 @@ export default function LandingPage() {
                 <Image
                   src="/demo.png"
                   alt="AI Schedule Planner Dashboard"
-                  className=" h-[400px] rounded-lg"
-                  width={400}
-                  height={400}
+                  className="w-full h-auto rounded-lg"
+                  width={1200}
+                  height={900}
+                  quality={95}
+                  priority
                 />
               </div>
             </div>

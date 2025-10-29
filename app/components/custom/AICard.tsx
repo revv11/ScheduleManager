@@ -86,14 +86,16 @@ export default function AICard({ task }: { task: TaskType }) {
   };
 
   return (
-    <div className="group rounded-xl border border-zinc-800 bg-gradient-to-br from-zinc-900/80 to-zinc-900/40 p-6 shadow-lg transition-all duration-200 hover:border-zinc-700 hover:shadow-xl hover:from-zinc-900/90 hover:to-zinc-900/60">
+    <div 
+      className="group rounded-xl border border-zinc-800 bg-gradient-to-br from-zinc-900/80 to-zinc-900/40 p-6 shadow-lg transition-all duration-200 hover:border-zinc-700 hover:shadow-xl hover:from-zinc-900/90 hover:to-zinc-900/60 cursor-pointer"
+      onClick={() => setIsExpanded(!isExpanded)}
+    >
       
       {/* Task Title */}
       <div className="mb-4">
         <div className="flex items-start justify-between gap-3">
           <h3 
-            className="text-xl font-bold text-white cursor-pointer hover:text-zinc-200 transition-colors leading-tight flex-1"
-            onClick={() => setIsExpanded(!isExpanded)}
+            className="text-xl font-bold text-white hover:text-zinc-200 transition-colors leading-tight flex-1"
           >
             {task.title}
           </h3>
@@ -155,17 +157,11 @@ export default function AICard({ task }: { task: TaskType }) {
               Duration
             </div>
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setIsExpanded(!isExpanded)}
-            className="h-10 w-10 text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors rounded-lg"
-            title={isExpanded ? "Collapse subtasks" : "Show subtasks"}
-          >
+          <div className="h-10 w-10 flex items-center justify-center text-zinc-400 rounded-lg">
             <ChevronDown 
               className={`h-5 w-5 transition-transform duration-300 ${isExpanded ? "rotate-180" : ""}`}
             />
-          </Button>
+          </div>
         </div>
       </div>
 
@@ -186,7 +182,10 @@ export default function AICard({ task }: { task: TaskType }) {
       />
 
       {/* --- Expandable Subtask Section --- */}
-      <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isExpanded ? "max-h-[700px] opacity-100 pb-2" : "max-h-0 opacity-0"}`}>
+      <div 
+        className={`overflow-hidden transition-all duration-300 ease-in-out ${isExpanded ? "max-h-[700px] opacity-100 pb-2" : "max-h-0 opacity-0"}`}
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="mt-6 pt-6 border-t border-zinc-700/30">
           {/* Subtask Header */}
           <div className="mb-5 flex items-center justify-between">

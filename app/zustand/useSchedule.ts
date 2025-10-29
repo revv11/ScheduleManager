@@ -82,13 +82,14 @@ const useSchedule = create<ConversationState>((set)=>({
     loadingMore: false,
     setLoadingMore: (loadingMore) => set({ loadingMore }),
     fetchTasks: async ()=>{
-        set((state) => ({ taskLoading: true, globalLoading: true || state.subTaskLoading }));
+        set((state) => ({ taskLoading: true, taskError: null, globalLoading: true || state.subTaskLoading }));
         try{
             const res = await axios.get('/api/tasks')
             if(res.data.success){
                 set((state) => ({
                     tasks: res.data.tasks as TaskType[],
                     taskLoading: false,
+                    taskError: null,
                     globalLoading: false || state.subTaskLoading
                 }));
             }
@@ -112,7 +113,7 @@ const useSchedule = create<ConversationState>((set)=>({
         if (loadOlder) {
             set({ loadingMore: true });
         } else {
-            set({ msgLoading: true });
+            set({ msgLoading: true, msgError: null });
         }
         
         try {
@@ -145,6 +146,7 @@ const useSchedule = create<ConversationState>((set)=>({
                     set({
                         messages: newMessages,
                         msgLoading: false,
+                        msgError: null,
                         hasMoreMessages: pagination.hasMore,
                         totalMessages: pagination.totalCount
                     });
@@ -181,6 +183,7 @@ const useSchedule = create<ConversationState>((set)=>({
     fetchSubTasks: async () => {
         set((state) => ({ 
             subTaskLoading: true,
+            subTaskError: null,
             globalLoading: true || state.taskLoading 
         }));
         try {
@@ -189,6 +192,7 @@ const useSchedule = create<ConversationState>((set)=>({
                 set((state) => ({ 
                     subTasks: res.data.subTasks as SubTaskType[],
                     subTaskLoading: false,
+                    subTaskError: null,
                     globalLoading: false || state.taskLoading
                 }));
             } else {
@@ -210,11 +214,21 @@ const useSchedule = create<ConversationState>((set)=>({
     // --- API-INTEGRATED SUBTASK LOGIC ---
 
     addSubTask: async (text, taskId) => {
+        // Generate a temporary ID for optimistic update
+        const tempId = `temp-${Date.now()}-${Math.random()}`;
+        const optimisticSubTask: SubTaskType = {
+            id: tempId,
+            description: text,
+            taskId: taskId,
+            isCompleted: false,
+        };
+
+        // Optimistically add to UI immediately
+        set((state) => ({
+            subTasks: [...state.subTasks, optimisticSubTask],
+        }));
+
         try {
-            set((state) => ({ 
-                subTaskLoading: true,
-                globalLoading: true || state.taskLoading 
-            }));
             const res = await axios.post('/api/subtasks', {
                 description: text,
                 taskId: taskId
@@ -222,23 +236,25 @@ const useSchedule = create<ConversationState>((set)=>({
             
             if (res.data.success) {
                 const newSubTask = res.data.subTask;
+                // Replace temporary subtask with real one from backend
                 set((state) => ({
-                    subTasks: [...state.subTasks, newSubTask],
-                    subTaskLoading: false,
-                    globalLoading: false || state.taskLoading
+                    subTasks: state.subTasks.map((st) =>
+                        st.id === tempId ? newSubTask : st
+                    ),
+                    subTaskError: null,
                 }));
             } else {
-                set((state) => ({ 
+                // Remove optimistic subtask on error
+                set((state) => ({
+                    subTasks: state.subTasks.filter((st) => st.id !== tempId),
                     subTaskError: res.data.error,
-                    subTaskLoading: false,
-                    globalLoading: false || state.taskLoading
                 }));
             }
         } catch (error: any) {
-            set((state) => ({ 
+            // Remove optimistic subtask on error
+            set((state) => ({
+                subTasks: state.subTasks.filter((st) => st.id !== tempId),
                 subTaskError: error.message,
-                subTaskLoading: false,
-                globalLoading: false || state.taskLoading
             }));
         }
     },

@@ -2,13 +2,16 @@
 
 import React from "react";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { AlertCircle, RefreshCw } from "lucide-react";
 
 type SkeletonWrapperProps = {
   loading: boolean;
-  error?: React.ReactNode | string;
+  error?: React.ReactNode | string | null;
   children: React.ReactNode;
   skeleton?: React.ReactNode;
   className?: string;
+  onRetry?: () => void;
 };
 
 /**
@@ -21,6 +24,7 @@ export default function SkeletonWrapper({
   children,
   skeleton,
   className,
+  onRetry,
 }: SkeletonWrapperProps) {
   if (loading) {
     return (
@@ -39,15 +43,29 @@ export default function SkeletonWrapper({
 
   if (error) {
     return (
-      <div className={cn("rounded-md border border-red-900/40 bg-red-950/50 p-4 text-sm text-red-300", className)}>
-        {typeof error === "string" ? (
-          <div className="flex items-center gap-2">
-            <div className="h-4 w-4 rounded-full bg-red-500" />
-            <span>{error}</span>
+      <div className={cn("flex h-full w-full items-center justify-center p-6", className)}>
+        <div className="flex max-w-md flex-col items-center gap-4 rounded-lg border border-red-900/40 bg-red-950/20 p-6 text-center">
+          <div className="rounded-full bg-red-950/50 p-3">
+            <AlertCircle className="h-6 w-6 text-red-400" />
           </div>
-        ) : (
-          error
-        )}
+          <div className="space-y-2">
+            <h3 className="font-semibold text-red-200">Something went wrong</h3>
+            <p className="text-sm text-red-300/80">
+              {typeof error === "string" ? error : "An error occurred while loading data"}
+            </p>
+          </div>
+          {onRetry && (
+            <Button
+              onClick={onRetry}
+              variant="outline"
+              size="sm"
+              className="mt-2 border-red-800 bg-red-950/50 text-red-200 hover:bg-red-900/50 hover:text-red-100"
+            >
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Try Again
+            </Button>
+          )}
+        </div>
       </div>
     );
   }

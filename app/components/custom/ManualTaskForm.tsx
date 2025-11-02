@@ -68,18 +68,18 @@ export default function ManualTaskForm({
       const taskStartTime = new Date(task.startTime);
       const taskEndTime = new Date(taskStartTime.getTime() + task.duration * 60 * 1000);
       
-      // Extract hours and minutes for start time
-      let startHour24 = taskStartTime.getHours();
+  // Extract hours and minutes for start time
+  const startHour24 = taskStartTime.getHours();
       const startMinute = taskStartTime.getMinutes();
       const startPeriod = startHour24 >= 12 ? "PM" : "AM";
-      let startHour12 = startHour24 % 12;
+  let startHour12 = startHour24 % 12;
       if (startHour12 === 0) startHour12 = 12;
       
-      // Extract hours and minutes for end time
-      let endHour24 = taskEndTime.getHours();
+  // Extract hours and minutes for end time
+  const endHour24 = taskEndTime.getHours();
       const endMinute = taskEndTime.getMinutes();
       const endPeriod = endHour24 >= 12 ? "PM" : "AM";
-      let endHour12 = endHour24 % 12;
+  let endHour12 = endHour24 % 12;
       if (endHour12 === 0) endHour12 = 12;
       
       setFormData({
@@ -253,7 +253,7 @@ export default function ManualTaskForm({
           const startMinutes = startHour24 * 60 + parseInt(newData.startMinute);
           const endMinutes = startMinutes + durationNum;
           
-          let endHour24 = Math.floor(endMinutes / 60) % 24;
+          const endHour24 = Math.floor(endMinutes / 60) % 24;
           const endMin = endMinutes % 60;
           
           const endPeriod = endHour24 >= 12 ? "PM" : "AM";
@@ -278,7 +278,7 @@ export default function ManualTaskForm({
           const startMinutes = startHour24 * 60 + parseInt(newData.startMinute);
           const endMinutes = startMinutes + durationNum;
           
-          let endHour24 = Math.floor(endMinutes / 60) % 24;
+          const endHour24 = Math.floor(endMinutes / 60) % 24;
           const endMin = endMinutes % 60;
           
           const endPeriod = endHour24 >= 12 ? "PM" : "AM";

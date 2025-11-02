@@ -51,7 +51,7 @@ export default function Login() {
     <div>
       <div className="mb-6">
         <p className="text-muted-foreground">
-          Login and continue using our servesis!
+          Login and continue using our services!
         </p>
       </div>
 

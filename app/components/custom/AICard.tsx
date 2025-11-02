@@ -7,7 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import dayjs from "dayjs";
 import useSchedule from "@/zustand/useSchedule"; // Import your Zustand store
-import EditTaskForm from "./EditTaskForm";
+import ManualTaskForm from "./ManualTaskForm";
 import DeleteTaskDialog from "./DeleteTaskDialog";
 
 // NOTE: These types should ideally live in a central `types.ts` file
@@ -61,8 +61,8 @@ export default function AICard({ task }: { task: TaskType }) {
 
   const handleAddSubtask = async () => {
     if (newSubtask.trim() === "") return;
-    await addSubTask(newSubtask.trim(), task.id);
     setNewSubtask(""); // Clear the input field after adding
+    await addSubTask(newSubtask.trim(), task.id);
   };
 
   const toggleSubtask = async (id: string, currentStatus: boolean) => {
@@ -166,7 +166,7 @@ export default function AICard({ task }: { task: TaskType }) {
       </div>
 
       {/* Edit Task Form Modal */}
-      <EditTaskForm
+      <ManualTaskForm
         isOpen={showEditForm}
         onClose={() => setShowEditForm(false)}
         onSuccess={handleTaskUpdate}

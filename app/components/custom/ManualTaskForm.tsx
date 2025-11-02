@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -7,33 +7,95 @@ import { X, AlertTriangle, Loader2 } from "lucide-react";
 import dayjs from "dayjs";
 import axios from "axios";
 import { toast } from "react-hot-toast";
-import { validateTaskForm } from "@/lib/taskConflicts";
+import { validateTaskCreation } from "@/lib/taskConflicts";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
+import "@/app/datepicker.css";
+import useSchedule from "@/zustand/useSchedule";
 
 interface ManualTaskFormProps {
   isOpen: boolean;
   onClose: () => void;
-  onSuccess: () => void; // Changed from onAddTask to onSuccess
+  onSuccess: () => void;
+  task?: TaskType | null; // Optional task for editing mode
 }
 
 interface TaskFormData {
   title: string;
-  startTime: string;
+  startDate: Date;
+  startHour: string;
+  startMinute: string;
+  startPeriod: "AM" | "PM";
+  endHour: string;
+  endMinute: string;
+  endPeriod: "AM" | "PM";
   duration: string;
+  priority: Priority;
 }
+
+type TimeInputMode = "duration" | "endTime";
 
 export default function ManualTaskForm({ 
   isOpen, 
   onClose, 
-  onSuccess
+  onSuccess,
+  task
 }: ManualTaskFormProps) {
+  const isEditMode = !!task;
   const [formData, setFormData] = useState<TaskFormData>({
     title: "",
-    startTime: "",
-    duration: ""
+    startDate: new Date(),
+    startHour: "",
+    startMinute: "",
+    startPeriod: new Date().getHours() >= 12 ? "PM" : "AM",
+    endHour: "",
+    endMinute: "",
+    endPeriod: new Date().getHours() >= 12 ? "PM" : "AM",
+    duration: "",
+    priority: "MEDIUM"
   });
+  const [timeInputMode, setTimeInputMode] = useState<TimeInputMode>("duration");
   const [conflictingTasks, setConflictingTasks] = useState<TaskType[]>([]);
   const [formError, setFormError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Get tasks from Zustand store for conflict checking
+  const { tasks } = useSchedule();
+
+  // Populate form when task changes (edit mode)
+  useEffect(() => {
+    if (task && isOpen) {
+      const taskStartTime = new Date(task.startTime);
+      const taskEndTime = new Date(taskStartTime.getTime() + task.duration * 60 * 1000);
+      
+      // Extract hours and minutes for start time
+      let startHour24 = taskStartTime.getHours();
+      const startMinute = taskStartTime.getMinutes();
+      const startPeriod = startHour24 >= 12 ? "PM" : "AM";
+      let startHour12 = startHour24 % 12;
+      if (startHour12 === 0) startHour12 = 12;
+      
+      // Extract hours and minutes for end time
+      let endHour24 = taskEndTime.getHours();
+      const endMinute = taskEndTime.getMinutes();
+      const endPeriod = endHour24 >= 12 ? "PM" : "AM";
+      let endHour12 = endHour24 % 12;
+      if (endHour12 === 0) endHour12 = 12;
+      
+      setFormData({
+        title: task.title,
+        startDate: taskStartTime,
+        startHour: startHour12.toString(),
+        startMinute: startMinute.toString().padStart(2, '0'),
+        startPeriod: startPeriod,
+        endHour: endHour12.toString(),
+        endMinute: endMinute.toString().padStart(2, '0'),
+        endPeriod: endPeriod,
+        duration: task.duration.toString(),
+        priority: task.priority
+      });
+    }
+  }, [task, isOpen]);
 
   const handleSubmit = async () => {
     // Reset errors
@@ -42,36 +104,74 @@ export default function ManualTaskForm({
     setIsSubmitting(true);
     
     try {
-      // Validate form
-      const validation = validateTaskForm(formData.title, formData.startTime, formData.duration);
-      if (!validation.isValid) {
-        setFormError(validation.error);
+      // Validate time inputs
+      if (!formData.startHour || !formData.startMinute) {
+        setFormError("Please enter start time");
+        setIsSubmitting(false);
         return;
       }
+
+      // Convert 12-hour to 24-hour format
+      let startHour24 = parseInt(formData.startHour);
+      if (formData.startPeriod === "PM" && startHour24 !== 12) {
+        startHour24 += 12;
+      } else if (formData.startPeriod === "AM" && startHour24 === 12) {
+        startHour24 = 0;
+      }
+
+      // Create start date time
+      const startDateTime = new Date(formData.startDate);
+      startDateTime.setHours(startHour24, parseInt(formData.startMinute), 0, 0);
       
       const duration = parseInt(formData.duration);
       
-      // Convert datetime-local format to ISO string
-      const startDateTime = new Date(formData.startTime).toISOString();
+      // Validate task creation with comprehensive checks including conflict detection
+      // Filter out current task in edit mode to avoid self-conflict
+      const tasksToCheck = isEditMode 
+        ? tasks.filter(t => t.id !== task?.id)
+        : tasks;
+      
+      const validation = validateTaskCreation(
+        formData.title,
+        startDateTime,
+        duration,
+        tasksToCheck
+      );
+      
+      if (!validation.isValid) {
+        setFormError(validation.error);
+        if (validation.conflictingTasks) {
+          setConflictingTasks(validation.conflictingTasks);
+        }
+        setIsSubmitting(false);
+        return;
+      }
       
       // Submit to API
-      const response = await axios.post('/api/tasks', {
-        title: formData.title,
-        startTime: startDateTime,
-        duration: duration,
-        priority: "MEDIUM"
-      });
+      const response = isEditMode
+        ? await axios.patch(`/api/tasks/${task?.id}`, {
+            title: formData.title,
+            startTime: startDateTime.toISOString(),
+            duration: duration,
+            priority: formData.priority
+          })
+        : await axios.post('/api/tasks', {
+            title: formData.title,
+            startTime: startDateTime.toISOString(),
+            duration: duration,
+            priority: formData.priority
+          });
       
       if (response.data.success) {
-        toast.success("Task created successfully!");
+        toast.success(isEditMode ? "Task updated successfully!" : "Task created successfully!");
         handleClose();
         onSuccess(); // Trigger refresh of tasks
       } else {
-        setFormError(response.data.error || "Failed to create task");
+        setFormError(response.data.error || (isEditMode ? "Failed to update task" : "Failed to create task"));
       }
       
     } catch (error: any) {
-      console.error("Error creating task:", error);
+      console.error(isEditMode ? "Error updating task:" : "Error creating task:", error);
       
       if (error.response?.status === 409) {
         // Handle time conflicts
@@ -86,9 +186,12 @@ export default function ManualTaskForm({
         } else {
           setFormError(error.response.data.error || "Validation failed");
         }
+      } else if (error.response?.status === 404) {
+        setFormError("Task not found");
+        toast.error("Task not found");
       } else {
-        setFormError("Failed to create task. Please try again.");
-        toast.error("Failed to create task");
+        setFormError(isEditMode ? "Failed to update task. Please try again." : "Failed to create task. Please try again.");
+        toast.error(isEditMode ? "Failed to update task" : "Failed to create task");
       }
     } finally {
       setIsSubmitting(false);
@@ -96,23 +199,115 @@ export default function ManualTaskForm({
   };
 
   const handleClose = () => {
-    setFormData({ title: "", startTime: "", duration: "" });
+    setFormData({ 
+      title: "", 
+      startDate: new Date(),
+      startHour: "",
+      startMinute: "",
+      startPeriod: new Date().getHours() >= 12 ? "PM" : "AM",
+      endHour: "",
+      endMinute: "",
+      endPeriod: new Date().getHours() >= 12 ? "PM" : "AM",
+      duration: "",
+      priority: "MEDIUM"
+    });
     setFormError("");
     setConflictingTasks([]);
+    setTimeInputMode("duration");
     onClose();
   };
 
-  const updateFormData = (field: keyof TaskFormData, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+  const updateFormData = (field: keyof TaskFormData, value: any) => {
+    setFormData(prev => {
+      const newData = { ...prev, [field]: value };
+      
+      // Auto-calculate when end time fields change
+      if ((field === "endHour" || field === "endMinute" || field === "endPeriod") && 
+          newData.startHour && newData.startMinute && newData.endHour && newData.endMinute) {
+        
+        let startHour24 = parseInt(newData.startHour);
+        if (newData.startPeriod === "PM" && startHour24 !== 12) startHour24 += 12;
+        else if (newData.startPeriod === "AM" && startHour24 === 12) startHour24 = 0;
+        
+        let endHour24 = parseInt(newData.endHour);
+        if (newData.endPeriod === "PM" && endHour24 !== 12) endHour24 += 12;
+        else if (newData.endPeriod === "AM" && endHour24 === 12) endHour24 = 0;
+        
+        const startMinutes = startHour24 * 60 + parseInt(newData.startMinute);
+        const endMinutes = endHour24 * 60 + parseInt(newData.endMinute);
+        const durationMinutes = endMinutes - startMinutes;
+        
+        if (durationMinutes > 0) {
+          newData.duration = durationMinutes.toString();
+        }
+      }
+      
+      // Auto-calculate when duration changes
+      if (field === "duration" && newData.startHour && newData.startMinute && value) {
+        const durationNum = parseInt(value);
+        if (!isNaN(durationNum) && durationNum > 0) {
+          let startHour24 = parseInt(newData.startHour);
+          if (newData.startPeriod === "PM" && startHour24 !== 12) startHour24 += 12;
+          else if (newData.startPeriod === "AM" && startHour24 === 12) startHour24 = 0;
+          
+          const startMinutes = startHour24 * 60 + parseInt(newData.startMinute);
+          const endMinutes = startMinutes + durationNum;
+          
+          let endHour24 = Math.floor(endMinutes / 60) % 24;
+          const endMin = endMinutes % 60;
+          
+          const endPeriod = endHour24 >= 12 ? "PM" : "AM";
+          let endHour12 = endHour24 % 12;
+          if (endHour12 === 0) endHour12 = 12;
+          
+          newData.endHour = endHour12.toString();
+          newData.endMinute = endMin.toString().padStart(2, '0');
+          newData.endPeriod = endPeriod;
+        }
+      }
+      
+      // Auto-calculate when start time changes
+      if ((field === "startHour" || field === "startMinute" || field === "startPeriod") && 
+          newData.duration && newData.startHour && newData.startMinute) {
+        const durationNum = parseInt(newData.duration);
+        if (!isNaN(durationNum) && durationNum > 0) {
+          let startHour24 = parseInt(newData.startHour);
+          if (newData.startPeriod === "PM" && startHour24 !== 12) startHour24 += 12;
+          else if (newData.startPeriod === "AM" && startHour24 === 12) startHour24 = 0;
+          
+          const startMinutes = startHour24 * 60 + parseInt(newData.startMinute);
+          const endMinutes = startMinutes + durationNum;
+          
+          let endHour24 = Math.floor(endMinutes / 60) % 24;
+          const endMin = endMinutes % 60;
+          
+          const endPeriod = endHour24 >= 12 ? "PM" : "AM";
+          let endHour12 = endHour24 % 12;
+          if (endHour12 === 0) endHour12 = 12;
+          
+          newData.endHour = endHour12.toString();
+          newData.endMinute = endMin.toString().padStart(2, '0');
+          newData.endPeriod = endPeriod;
+        }
+      }
+      
+      return newData;
+    });
   };
 
   if (!isOpen) return null;
 
   return (
-    <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-      <div className="mx-4 w-full max-w-md rounded-lg border border-zinc-800 bg-zinc-950 p-6 shadow-xl">
+    <div 
+      className="absolute inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <div 
+        className="mx-4 w-full max-w-md rounded-lg border border-zinc-800 bg-zinc-950 p-6 shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-white">Add New Task</h3>
+          <h3 className="text-lg font-semibold text-white">{isEditMode ? "Edit Task" : "Add New Task"}</h3>
           <Button
             variant="ghost"
             size="icon"
@@ -138,32 +333,202 @@ export default function ManualTaskForm({
             />
           </div>
 
+          {/* Date Picker */}
           <div>
-            <Label htmlFor="start-time" className="text-zinc-300">
-              Start Time
-            </Label>
-            <Input
-              id="start-time"
-              type="datetime-local"
-              value={formData.startTime}
-              onChange={(e) => updateFormData("startTime", e.target.value)}
-              className="mt-1 bg-zinc-800 border-zinc-700"
-            />
+            <Label className="text-zinc-300">Date</Label>
+            <DatePicker
+              selected={formData.startDate}
+              onChange={(date) => updateFormData("startDate", date || new Date())}
+              dateFormat="MMMM d, yyyy"
+              className="mt-1 w-full rounded-md bg-zinc-800 border border-zinc-700 px-3 py-2 text-sm text-white placeholder:text-zinc-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              calendarClassName="bg-zinc-900 border-zinc-700"
+              minDate={new Date()}
+              withPortal
+            >
+              <div className="flex justify-end gap-2 p-2 border-t border-zinc-700 bg-zinc-900">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => updateFormData("startDate", new Date())}
+                  className="border-zinc-700 text-zinc-300 hover:bg-zinc-800"
+                >
+                  Today
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    const picker = document.querySelector('.react-datepicker__portal');
+                    if (picker) {
+                      (picker as HTMLElement).style.display = 'none';
+                    }
+                  }}
+                  className="bg-purple-600 hover:bg-purple-700"
+                >
+                  Confirm
+                </Button>
+              </div>
+            </DatePicker>
+          </div>
+
+          {/* Start Time Input */}
+          <div>
+            <Label className="text-zinc-300">Start Time</Label>
+            <div className="mt-1 flex gap-2 items-center">
+              <Input
+                type="number"
+                min="1"
+                max="12"
+                placeholder="HH"
+                value={formData.startHour}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (val === "" || (parseInt(val) >= 1 && parseInt(val) <= 12)) {
+                    updateFormData("startHour", val);
+                  }
+                }}
+                className="w-20 bg-zinc-800 border-zinc-700 text-center text-lg font-semibold"
+              />
+              <span className="text-zinc-500 text-xl">:</span>
+              <Input
+                type="number"
+                min="0"
+                max="59"
+                placeholder="MM"
+                value={formData.startMinute}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (val === "" || (parseInt(val) >= 0 && parseInt(val) <= 59)) {
+                    updateFormData("startMinute", val);
+                  }
+                }}
+                className="w-20 bg-zinc-800 border-zinc-700 text-center text-lg font-semibold"
+              />
+              <select
+                value={formData.startPeriod}
+                onChange={(e) => updateFormData("startPeriod", e.target.value as "AM" | "PM")}
+                className="px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+              >
+                <option value="AM">AM</option>
+                <option value="PM">PM</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Toggle between Duration and End Time */}
+          <div>
+            <div className="mb-2 flex items-center gap-2">
+              <Label className="text-zinc-300">Time Input</Label>
+              <div className="flex rounded-lg bg-zinc-800 p-1">
+                <button
+                  type="button"
+                  onClick={() => setTimeInputMode("duration")}
+                  className={`px-3 py-1 text-xs font-medium rounded transition-colors ${
+                    timeInputMode === "duration"
+                      ? "bg-purple-600 text-white"
+                      : "text-zinc-400 hover:text-zinc-200"
+                  }`}
+                >
+                  Duration
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTimeInputMode("endTime")}
+                  className={`px-3 py-1 text-xs font-medium rounded transition-colors ${
+                    timeInputMode === "endTime"
+                      ? "bg-purple-600 text-white"
+                      : "text-zinc-400 hover:text-zinc-200"
+                  }`}
+                >
+                  End Time
+                </button>
+              </div>
+            </div>
+
+            {timeInputMode === "duration" ? (
+              <div>
+                <Label htmlFor="duration" className="text-zinc-300">
+                  Duration (minutes)
+                </Label>
+                <Input
+                  id="duration"
+                  type="number"
+                  min="1"
+                  value={formData.duration}
+                  onChange={(e) => updateFormData("duration", e.target.value)}
+                  placeholder="Enter duration in minutes..."
+                  className="mt-1 bg-zinc-800 border-zinc-700"
+                />
+                {formData.endHour && formData.endMinute && (
+                  <p className="mt-1 text-xs text-zinc-500">
+                    Ends at: {formData.endHour}:{formData.endMinute} {formData.endPeriod}
+                  </p>
+                )}
+              </div>
+            ) : (
+              <div>
+                <Label className="text-zinc-300">End Time</Label>
+                <div className="mt-1 flex gap-2 items-center">
+                  <Input
+                    type="number"
+                    min="1"
+                    max="12"
+                    placeholder="HH"
+                    value={formData.endHour}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val === "" || (parseInt(val) >= 1 && parseInt(val) <= 12)) {
+                        updateFormData("endHour", val);
+                      }
+                    }}
+                    className="w-20 bg-zinc-800 border-zinc-700 text-center text-lg font-semibold"
+                  />
+                  <span className="text-zinc-500 text-xl">:</span>
+                  <Input
+                    type="number"
+                    min="0"
+                    max="59"
+                    placeholder="MM"
+                    value={formData.endMinute}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val === "" || (parseInt(val) >= 0 && parseInt(val) <= 59)) {
+                        updateFormData("endMinute", val);
+                      }
+                    }}
+                    className="w-20 bg-zinc-800 border-zinc-700 text-center text-lg font-semibold"
+                  />
+                  <select
+                    value={formData.endPeriod}
+                    onChange={(e) => updateFormData("endPeriod", e.target.value as "AM" | "PM")}
+                    className="px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  >
+                    <option value="AM">AM</option>
+                    <option value="PM">PM</option>
+                  </select>
+                </div>
+                {formData.duration && (
+                  <p className="mt-1 text-xs text-zinc-500">
+                    Duration: {formData.duration} minutes
+                  </p>
+                )}
+              </div>
+            )}
           </div>
 
           <div>
-            <Label htmlFor="duration" className="text-zinc-300">
-              Duration (minutes)
+            <Label htmlFor="priority" className="text-zinc-300">
+              Priority
             </Label>
-            <Input
-              id="duration"
-              type="number"
-              min="1"
-              value={formData.duration}
-              onChange={(e) => updateFormData("duration", e.target.value)}
-              placeholder="Enter duration in minutes..."
-              className="mt-1 bg-zinc-800 border-zinc-700"
-            />
+            <select
+              id="priority"
+              value={formData.priority}
+              onChange={(e) => updateFormData("priority", e.target.value)}
+              className="mt-1 w-full rounded-md border border-zinc-700 bg-zinc-800 px-3 py-2 text-zinc-300 focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500"
+            >
+              <option value="LOW">Low</option>
+              <option value="MEDIUM">Medium</option>
+              <option value="HIGH">High</option>
+            </select>
           </div>
 
           {/* Error Message */}
@@ -212,10 +577,10 @@ export default function ManualTaskForm({
               {isSubmitting ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Creating...
+                  {isEditMode ? "Updating..." : "Creating..."}
                 </>
               ) : (
-                "Add Task"
+                isEditMode ? "Update Task" : "Add Task"
               )}
             </Button>
           </div>
